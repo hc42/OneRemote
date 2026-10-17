@@ -1,0 +1,636 @@
+import Foundation
+import CoreBluetooth
+
+final class AmpController: NSObject, ObservableObject {
+    struct Found: Identifiable, Hashable {
+        let id: UUID
+        let name: String
+    }
+
+    @Published var status = String(localized: "Starting Bluetooth …")
+    @Published var scanning = false
+    @Published var found: [Found] = []
+    @Published var connected = false
+    @Published var deviceName = ""
+    /// Connection setup in progress (shown in the connection view)
+    @Published var connecting = false
+    /// Show the device search menu instead of connection/controls
+    @Published var showScan = true
+    /// Last chosen device, persisted between app launches
+    @Published private(set) var savedDevice: SavedDevice?
+
+    struct SavedDevice: Equatable {
+        let id: UUID
+        let name: String
+    }
+
+    private enum Keys {
+        static let id = "lastDeviceID"
+        static let name = "lastDeviceName"
+    }
+
+    @Published var volume = 0
+    @Published var muted = false
+    @Published var input: AmpInput?
+    @Published var hasDAC = false
+    @Published var headphones = false
+    @Published var avDirect = false
+    /// true once the amplifier has reported the AV Direct state
+    @Published var avDirectKnown = false
+    @Published var serial = ""
+    @Published var firmware = ""
+    @Published var balance = 0
+    /// Safety limit for the volume, persisted (default 60 of 90)
+    @Published var maxVolume: Int = {
+        let saved = UserDefaults.standard.integer(forKey: "maxVolume")
+        if saved == 0 { return AmpBLE.defaultMaxVolume }
+        return max(10, min(saved, AmpBLE.maxHardwareVolume))
+    }() {
+        didSet { UserDefaults.standard.set(maxVolume, forKey: "maxVolume") }
+    }
+    @Published var log: [String] = []
+
+    private var central: CBCentralManager!
+    private var peripherals: [UUID: CBPeripheral] = [:]
+    private var peripheral: CBPeripheral?
+    private var dataChar: CBCharacteristic?
+    private var volumeWork: DispatchWorkItem?
+    private var balanceWork: DispatchWorkItem?
+    private var volumeFetchWork: DispatchWorkItem?
+    /// Live sending of the volume: at most every 0.1 s, always the latest value
+    private let volumeSendInterval = 0.1
+    private var pendingVolume: Int?
+    private var lastVolumeSend = Date.distantPast
+    /// Live sending of the balance, same principle as the volume
+    private let balanceSendInterval = 0.1
+    private var pendingBalance: Int?
+    private var lastBalanceSend = Date.distantPast
+    private var balanceFetchWork: DispatchWorkItem?
+    /// Input knob: the display jumps immediately, sending only happens after a short pause
+    private var inputWork: DispatchWorkItem?
+    private var pendingInput: AmpInput?
+    private var lastInputSend = Date.distantPast
+    /// Start time of the connection attempt, only used for the timing in the log
+    private var connectStarted = Date()
+    /// Writes without response that are waiting for free send capacity
+    private var writeQueue: [Data] = []
+    private var connectTimeout: DispatchWorkItem?
+    /// While scanning: connect as soon as this device shows up (in case iOS no longer knows the UUID)
+    private var autoTarget: UUID?
+    /// Message that should stay visible after an abort
+    private var pendingMessage: String?
+    /// Newly chosen device, only saved after the first successful connection
+    private var candidate: SavedDevice?
+    /// Target for connection attempts: the newly chosen device first, otherwise the saved one
+    private var target: SavedDevice? { candidate ?? savedDevice }
+    private let connectTimeoutSeconds = 15.0
+    /// Automatic retry after a failed connection attempt
+    private var retryWork: DispatchWorkItem?
+    private var attempt = 0
+
+    override init() {
+        super.init()
+        loadSavedDevice()
+        central = CBCentralManager(delegate: self, queue: .main)
+    }
+
+    private func loadSavedDevice() {
+        let d = UserDefaults.standard
+        if let s = d.string(forKey: Keys.id), let id = UUID(uuidString: s) {
+            let saved = SavedDevice(id: id, name: d.string(forKey: Keys.name) ?? "ONE")
+            savedDevice = saved
+            deviceName = saved.name
+            showScan = false
+            connecting = true // will connect after Bluetooth has started
+        } else {
+            showScan = true
+        }
+    }
+
+    private func save(_ device: SavedDevice) {
+        savedDevice = device
+        UserDefaults.standard.set(device.id.uuidString, forKey: Keys.id)
+        UserDefaults.standard.set(device.name, forKey: Keys.name)
+    }
+
+    // MARK: Actions
+
+    func startScan() {
+        guard central.state == .poweredOn else { return }
+        found.removeAll()
+        peripherals.removeAll()
+        scanning = true
+        status = String(localized: "Searching for devices")
+        central.scanForPeripherals(withServices: nil, options: nil)
+    }
+
+    func stopScan() {
+        central.stopScan()
+        scanning = false
+    }
+
+    /// Connect the device chosen in the search and remember it as the default
+    func connect(_ id: UUID) {
+        guard let p = peripherals[id] else { return }
+        stopScan()
+        let name = found.first(where: { $0.id == id })?.name ?? (p.name ?? "ONE")
+        candidate = SavedDevice(id: id, name: name)
+        showScan = false
+        beginConnect(p, name: name)
+    }
+
+    /// Connect to the target device: the newly chosen one first, otherwise the saved one
+    func connectToTarget() {
+        guard let saved = target, central.state == .poweredOn else { return }
+        guard !connected else { return }
+        abortConnect() // cleanly end any attempt in progress
+        retryWork?.cancel()
+        // Alternate between connecting directly with the known UUID and scanning. Some amplifiers show up
+        // with a new address after being switched off; then only scanning helps (like the manual selection).
+        attempt += 1
+        let useScan = attempt % 2 == 0
+        if !useScan, let p = central.retrievePeripherals(withIdentifiers: [saved.id]).first {
+            peripherals[saved.id] = p
+            beginConnect(p, name: saved.name)
+            // Scan in parallel: if the amplifier shows up under a different identifier, the scan wins
+            watchForTarget(saved)
+        } else {
+            // iOS does not know the UUID (any more): scan and connect when found
+            deviceName = saved.name
+            autoTarget = saved.id
+            connecting = true
+            status = String(localized: "Searching for \(saved.name) …")
+            central.scanForPeripherals(withServices: nil, options: nil)
+            armTimeout()
+        }
+    }
+
+    func retry() {
+        connectToTarget()
+    }
+
+    /// Switch to the device search. Ends a running or existing connection.
+    func openScan() {
+        abortConnect()
+        connected = false
+        avDirectKnown = false
+        showScan = true
+        startScan()
+    }
+
+    /// Back from the device search to the saved device
+    func closeScan() {
+        guard savedDevice != nil else { return }
+        candidate = nil // discard the unconfirmed selection
+        stopScan()
+        showScan = false
+        connectToTarget()
+    }
+
+    private func beginConnect(_ p: CBPeripheral, name: String) {
+        connectStarted = Date()
+        pendingMessage = nil
+        peripheral = p
+        p.delegate = self
+        deviceName = name
+        connecting = true
+        status = String(localized: "Connecting to \(name) …")
+        central.connect(p, options: nil)
+        armTimeout()
+    }
+
+    /// After an unexpected loss: keep the connection request open. iOS connects by itself
+    /// as soon as the amplifier is reachable again. Deliberately without a timeout.
+    private func reconnect(_ p: CBPeripheral) {
+        connectStarted = Date()
+        peripheral = p
+        connecting = true
+        status = String(localized: "Connection lost. Waiting for \(deviceName) …")
+        central.connect(p, options: nil)
+        // With a time limit: if the amplifier is not found, failConnect tries again (alternating with a scan)
+        armTimeout()
+        if let saved = target { watchForTarget(saved) }
+    }
+
+    /// Scan in addition to the open connection request: as soon as the target device shows up (by identifier or name),
+    /// connect using that result
+    private func watchForTarget(_ saved: SavedDevice) {
+        guard central.state == .poweredOn, !scanning else { return }
+        autoTarget = saved.id
+        central.scanForPeripherals(withServices: nil, options: nil)
+    }
+
+    /// Retry in a few seconds after a failure, as long as a saved device exists
+    /// and the user is not in the device search
+    private func scheduleRetry() {
+        retryWork?.cancel()
+        guard savedDevice != nil, candidate == nil, !showScan else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self, !self.connected, !self.connecting, !self.showScan else { return }
+            self.connectToTarget()
+        }
+        retryWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: work)
+    }
+
+    /// Bluetooth unusable: reset the state
+    private func markOffline() {
+        connecting = false
+        connected = false
+        avDirectKnown = false
+        connectTimeout?.cancel()
+    }
+
+    private func armTimeout() {
+        connectTimeout?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self, self.connecting, !self.connected else { return }
+            self.failConnect(String(localized: "Could not connect to \(self.deviceName). Is the amplifier on and in range?"))
+        }
+        connectTimeout = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + connectTimeoutSeconds, execute: work)
+    }
+
+    /// Abort a connection attempt with a message
+    private func failConnect(_ message: String) {
+        pendingMessage = message
+        status = message
+        abortConnect()
+        scheduleRetry()
+    }
+
+    /// Ends timer, scan and (half-)open connection
+    private func abortConnect() {
+        connectTimeout?.cancel()
+        connectTimeout = nil
+        autoTarget = nil
+        connecting = false
+        if !scanning { central.stopScan() }
+        if let p = peripheral { central.cancelPeripheralConnection(p) }
+    }
+
+    /// With AV Direct on the AV input the volume is fixed on the amplifier
+    var volumeLocked: Bool { avDirect && input == .av }
+
+    /// AV Direct is only offered from firmware 2.0
+    var avDirectSupported: Bool { (Double(firmware) ?? 0) >= 2.0 }
+
+    func setVolume(_ value: Int) {
+        guard !volumeLocked else { return }
+        let v = max(0, min(value, min(maxVolume, AmpBLE.maxHardwareVolume)))
+        // Send nothing at the limits (silent, maximum), not even when the button is held
+        guard v != volume || pendingVolume != nil else { return }
+        volume = v
+        pendingVolume = v
+        // Live: send immediately if the last send was long enough ago, otherwise send the
+        // latest value at the next possible moment. The last value is always sent.
+        let elapsed = Date().timeIntervalSince(lastVolumeSend)
+        if elapsed >= volumeSendInterval {
+            flushVolume()
+        } else if volumeWork == nil {
+            let work = DispatchWorkItem { [weak self] in self?.flushVolume() }
+            volumeWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + (volumeSendInterval - elapsed), execute: work)
+        }
+    }
+
+    private func flushVolume() {
+        volumeWork?.cancel()
+        volumeWork = nil
+        guard let v = pendingVolume else { return }
+        pendingVolume = nil
+        lastVolumeSend = Date()
+        let digits = Array(String(format: "%02d", v).utf8)
+        send([AmpBLE.Cmd.volume, UInt8(ascii: "2"), digits[0], digits[1]])
+        // After the last send, fetch the real value from the amplifier
+        requestVolume()
+    }
+
+    /// While we are sending volume ourselves, delayed responses from the amplifier
+    /// would make the control jump back. Such responses are ignored.
+    private var volumeEchoGuard: Bool {
+        pendingVolume != nil || Date().timeIntervalSince(lastVolumeSend) < 0.25
+    }
+
+    func toggleMute() {
+        let new = !muted
+        muted = new
+        send([AmpBLE.Cmd.mute, UInt8(ascii: "1"), new ? UInt8(ascii: "1") : UInt8(ascii: "0")])
+        requestVolume()
+    }
+
+    /// Fetch the volume again after mute and headphone changes.
+    /// Several requests in quick succession are combined into one.
+    private func requestVolume() {
+        volumeFetchWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.send([AmpBLE.Cmd.fetch, UInt8(ascii: "1"), AmpBLE.Cmd.volume])
+        }
+        volumeFetchWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+    }
+
+    func select(_ input: AmpInput) {
+        // A pending step must not overwrite the direct selection
+        inputWork?.cancel()
+        pendingInput = nil
+        lastInputSend = Date()
+        self.input = input
+        send([AmpBLE.Cmd.input, UInt8(ascii: "1"), input.rawValue])
+    }
+
+    /// Advance the input by `delta` positions, endless (after the last one comes the first again).
+    /// The display jumps immediately. Sending only happens once there has been no turning for 0.35 s,
+    /// so the amplifier relays do not switch at every intermediate position.
+    func stepInput(_ delta: Int) {
+        let all = AmpInput.allCases
+        let current = pendingInput ?? input ?? .bluetooth
+        guard let index = all.firstIndex(of: current) else { return }
+        let n = all.count
+        let next = all[((index + delta) % n + n) % n]
+        input = next
+        pendingInput = next
+        inputWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self, let target = self.pendingInput else { return }
+            self.pendingInput = nil
+            self.lastInputSend = Date()
+            self.send([AmpBLE.Cmd.input, UInt8(ascii: "1"), target.rawValue])
+        }
+        inputWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
+    }
+
+    func setBalance(_ value: Int) {
+        guard !headphones else { return } // balance is disabled while headphones are connected
+        let v = max(0, min(value, 20))
+        balance = v
+        pendingBalance = v
+        let elapsed = Date().timeIntervalSince(lastBalanceSend)
+        if elapsed >= balanceSendInterval {
+            flushBalance()
+        } else if balanceWork == nil {
+            let work = DispatchWorkItem { [weak self] in self?.flushBalance() }
+            balanceWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + (balanceSendInterval - elapsed), execute: work)
+        }
+    }
+
+    private func flushBalance() {
+        balanceWork?.cancel()
+        balanceWork = nil
+        guard let v = pendingBalance else { return }
+        pendingBalance = nil
+        lastBalanceSend = Date()
+        let digits = Array(String(format: "%02d", v).utf8)
+        send([AmpBLE.Cmd.balance, UInt8(ascii: "2"), digits[0], digits[1]])
+        // After the last send, fetch the real value from the amplifier
+        balanceFetchWork?.cancel()
+        let fetch = DispatchWorkItem { [weak self] in
+            self?.send([AmpBLE.Cmd.fetch, UInt8(ascii: "1"), AmpBLE.Cmd.balance])
+        }
+        balanceFetchWork = fetch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: fetch)
+    }
+
+    /// Ignore responses from the amplifier while sending ourselves (no jumping back)
+    private var balanceEchoGuard: Bool {
+        pendingBalance != nil || Date().timeIntervalSince(lastBalanceSend) < 0.25
+    }
+
+    /// Display: 10 = center, 0 = fully left (100), 20 = fully right (100)
+    var balanceText: String {
+        let diff = (balance - 10) * 10
+        if diff == 0 { return String(localized: "Center") }
+        return diff < 0 ? String(localized: "Left \(-diff)") : String(localized: "Right \(diff)")
+    }
+
+    func brightness(up: Bool) {
+        send([AmpBLE.Cmd.brightness, UInt8(ascii: "1"), up ? UInt8(ascii: "+") : UInt8(ascii: "-")])
+    }
+
+    /// CAUTION: The command `@+A11%` is a toggle. Enabling and disabling send the same thing.
+    /// So only send it if the current state is known and the firmware fits.
+    /// The confirmations happen in the UI (AVDirectView).
+    func toggleAVDirect() {
+        guard connected, avDirectKnown, avDirectSupported else { return }
+        send([AmpBLE.Cmd.avDirect, UInt8(ascii: "1"), UInt8(ascii: "1")])
+        // Fetch the state again as a check
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.send([AmpBLE.Cmd.fetch, UInt8(ascii: "1"), AmpBLE.Cmd.avDirect])
+        }
+    }
+
+    func refresh() {
+        // No artificial pauses: CoreBluetooth queues writes with response by itself, one after another
+        for cmd in AmpBLE.initialFetch {
+            send([AmpBLE.Cmd.fetch, UInt8(ascii: "1"), cmd])
+        }
+    }
+
+    // MARK: Sending and receiving
+
+    private func send(_ body: [UInt8]) {
+        guard let p = peripheral, let c = dataChar else { return }
+        let data = AmpBLE.frame(body)
+        appendLog("→ " + hex(data))
+        if c.properties.contains(.write) {
+            p.writeValue(data, for: c, type: .withResponse)
+        } else if p.canSendWriteWithoutResponse && writeQueue.isEmpty {
+            p.writeValue(data, for: c, type: .withoutResponse)
+        } else {
+            writeQueue.append(data) // is sent in peripheralIsReady(toSendWriteWithoutResponse:)
+        }
+    }
+
+    private func handle(_ d: [UInt8]) {
+        appendLog("← " + hex(Data(d)))
+        guard d.count >= 5, d[0] == AmpBLE.start else { return }
+        let cmd = d[2]
+        let b = d[4]
+        let zero = UInt8(ascii: "0")
+
+        switch cmd {
+        case AmpBLE.Cmd.avDirect:
+            avDirect = (b != zero)
+            avDirectKnown = true
+        case AmpBLE.Cmd.hasDAC: hasDAC = (b != zero)
+        case AmpBLE.Cmd.headphones:
+            headphones = (b != zero)
+            requestVolume()
+        case AmpBLE.Cmd.mute:
+            muted = (b != zero)
+            requestVolume()
+        case AmpBLE.Cmd.input:
+            // Do not overwrite our own choice that has not been sent yet or has just been sent
+            if pendingInput == nil, Date().timeIntervalSince(lastInputSend) > 0.6 {
+                input = AmpInput(rawValue: b)
+            }
+        case AmpBLE.Cmd.volume:
+            if !volumeEchoGuard, d.count >= 6, let v = Int(String(decoding: d[4...5], as: UTF8.self)) { volume = v }
+        case AmpBLE.Cmd.balance:
+            if !balanceEchoGuard, d.count >= 6, let v = Int(String(decoding: d[4...5], as: UTF8.self)) { balance = v }
+        case AmpBLE.Cmd.version:
+            if d.count >= 6 {
+                let s = String(decoding: d[4...5], as: UTF8.self)
+                firmware = String(s.prefix(1)) + "." + String(s.dropFirst())
+            }
+        case AmpBLE.Cmd.serial:
+            // The payload ends before the final end character
+            if d.count > 5 { serial = String(decoding: d[4..<(d.count - 1)], as: UTF8.self) }
+        default: break
+        }
+    }
+
+    private func appendLog(_ s: String) {
+        log.append(s)
+        if log.count > 200 { log.removeFirst(log.count - 200) }
+    }
+
+    private func hex(_ data: Data) -> String {
+        data.map { String(format: "%02X", $0) }.joined(separator: " ")
+    }
+}
+
+// MARK: - CoreBluetooth
+
+extension AmpController: CBCentralManagerDelegate {
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        switch central.state {
+        case .poweredOn:
+            status = String(localized: "Bluetooth ready")
+            if showScan {
+                startScan()
+            } else {
+                connectToTarget()
+            }
+        case .poweredOff:
+            markOffline()
+            status = String(localized: "Bluetooth is turned off")
+        case .unauthorized:
+            markOffline()
+            status = String(localized: "Bluetooth access denied (check system settings)")
+        default:
+            markOffline()
+            status = String(localized: "Bluetooth unavailable")
+        }
+    }
+
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
+                        advertisementData: [String: Any], rssi RSSI: NSNumber) {
+        let advName = (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? peripheral.name
+        // Also recognize by name: after being switched off the amplifier can show up with a new address
+        if let targetID = autoTarget,
+           peripheral.identifier == targetID || (advName != nil && advName == target?.name) {
+            autoTarget = nil
+            central.stopScan()
+            peripherals[peripheral.identifier] = peripheral
+            // End a still-open request to another (stale) peripheral
+            if let old = self.peripheral, old.identifier != peripheral.identifier {
+                central.cancelPeripheralConnection(old)
+            }
+            beginConnect(peripheral, name: target?.name ?? peripheral.name ?? "ONE")
+            return
+        }
+        let name = (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? peripheral.name ?? ""
+        guard name.hasPrefix(AmpBLE.namePrefix) else { return }
+        peripherals[peripheral.identifier] = peripheral
+        let item = Found(id: peripheral.identifier, name: name)
+        if let i = found.firstIndex(where: { $0.id == item.id }) {
+            found[i] = item
+        } else {
+            found.append(item)
+        }
+    }
+
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        status = String(localized: "Connected, discovering services …")
+        peripheral.discoverServices([AmpBLE.service])
+    }
+
+    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+        failConnect(String(localized: "Connection failed: \(error?.localizedDescription ?? String(localized: "unknown"))"))
+    }
+
+    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        let wasConnected = connected
+        connected = false
+        connecting = false
+        connectTimeout?.cancel()
+        avDirectKnown = false
+        dataChar = nil
+        writeQueue.removeAll()
+        self.peripheral = nil
+        if let message = pendingMessage {
+            status = message
+            pendingMessage = nil
+        } else if wasConnected && !showScan {
+            // Unexpected loss (amplifier off, out of range): reconnect automatically
+            reconnect(peripheral)
+        } else {
+            status = error.map { String(localized: "Disconnected: \($0.localizedDescription)") } ?? String(localized: "Disconnected")
+        }
+    }
+}
+
+extension AmpController: CBPeripheralDelegate {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard let service = peripheral.services?.first(where: { $0.uuid == AmpBLE.service }) else {
+            failConnect(String(localized: "Control service not found"))
+            return
+        }
+        peripheral.discoverCharacteristics([AmpBLE.dataCharacteristic], for: service)
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        guard let c = service.characteristics?.first(where: { $0.uuid == AmpBLE.dataCharacteristic }) else {
+            failConnect(String(localized: "Data characteristic not found"))
+            return
+        }
+        dataChar = c
+        peripheral.setNotifyValue(true, for: c)
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+        if let error = error {
+            // Typical on first use: confirm the pairing dialog, then connect again
+            failConnect(String(localized: "Enabling notifications failed: \(error.localizedDescription)"))
+            return
+        }
+        guard characteristic.isNotifying else { return }
+        connected = true
+        connecting = false
+        attempt = 0
+        retryWork?.cancel()
+        autoTarget = nil
+        if !scanning { central.stopScan() }
+        connectTimeout?.cancel()
+        status = String(localized: "Connected")
+        appendLog(String(format: "Ready after %.1f s", Date().timeIntervalSince(connectStarted)))
+        // Only now, after the first successful connection, the device is saved as the default
+        if let device = candidate {
+            save(device)
+            candidate = nil
+        } else if let saved = savedDevice, saved.id != peripheral.identifier {
+            // The amplifier reported itself with a new identifier (name matches): remember the new identifier
+            save(SavedDevice(id: peripheral.identifier, name: saved.name))
+        }
+        refresh()
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard characteristic.uuid == AmpBLE.dataCharacteristic, let data = characteristic.value else { return }
+        handle([UInt8](data))
+    }
+
+    func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
+        guard let c = dataChar else { return }
+        while !writeQueue.isEmpty, peripheral.canSendWriteWithoutResponse {
+            peripheral.writeValue(writeQueue.removeFirst(), for: c, type: .withoutResponse)
+        }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        if let error = error { appendLog("Write error: \(error.localizedDescription)") }
+    }
+}

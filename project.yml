@@ -1,0 +1,53 @@
+# XcodeGen configuration: generates OneRemote.xcodeproj from it
+# Usage:  brew install xcodegen && xcodegen generate && open OneRemote.xcodeproj
+name: OneRemote
+
+options:
+  bundleIdPrefix: de.halfbrodt
+  # English is the source language and the fallback; German lives in Resources/de.lproj
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: "16.0"
+    macOS: "13.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  OneRemote:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    # Launch screen (iOS): black background with the icon. Nested entries do not work
+    # via INFOPLIST_KEY_*, so XcodeGen generates an Info.plist that is merged with the
+    # INFOPLIST_KEY_* values.
+    info:
+      path: Config/Info.plist
+      properties:
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
+    sources:
+      - path: OneRemote
+        excludes:
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemote
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Name under the icon (iOS) and in the menu bar/window (macOS)
+        INFOPLIST_KEY_CFBundleDisplayName: "One Remote"
+        PRODUCT_NAME: "One Remote"
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "The app connects to your amplifier via Bluetooth to control volume and input."
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        # iPhone and iPad
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # macOS only: app sandbox with Bluetooth permission
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": OneRemote/OneRemote-macOS.entitlements
+        ENABLE_APP_SANDBOX: YES
