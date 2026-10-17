@@ -26,6 +26,8 @@ struct ControlView: View {
     private var volumeDegreesPerLED: Double { 20 * slowdown }
     /// Position while scrolling the volume, in LED units (0 to 20, with fractions)
     @State private var scrubPos: Double?
+    /// Fractions of a step from the mouse wheel over the input knob
+    @State private var inputScrollAcc = 0.0
     @State private var scrubTime = Date.distantPast
     private var inputDegreesPerStep: Double { 16 * slowdown }
     /// No blinking until then: after opening, unlocking or connecting, the app fetches the input again,
@@ -60,6 +62,7 @@ struct ControlView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.black.ignoresSafeArea())
+        .background(keyboardShortcuts)
         .onChange(of: c.volume) { v in
             let newIndex = ledIndex(for: v, previous: lastLEDIndex)
             #if canImport(UIKit)
@@ -97,6 +100,23 @@ struct ControlView: View {
         #endif
     }
 
+    // MARK: Keyboard
+
+    /// Invisible buttons that provide the keyboard shortcuts (Mac, and iPad with a keyboard):
+    /// up/down = volume, left/right = input, space = mute
+    private var keyboardShortcuts: some View {
+        Group {
+            Button("") { c.setVolume(c.volume + 1) }.keyboardShortcut(.upArrow, modifiers: [])
+            Button("") { c.setVolume(c.volume - 1) }.keyboardShortcut(.downArrow, modifiers: [])
+            Button("") { c.stepInput(1) }.keyboardShortcut(.rightArrow, modifiers: [])
+            Button("") { c.stepInput(-1) }.keyboardShortcut(.leftArrow, modifiers: [])
+            Button("") { c.toggleMute() }.keyboardShortcut(.space, modifiers: [])
+        }
+        .frame(width: 0, height: 0)
+        .opacity(0)
+        .accessibilityHidden(true)
+    }
+
     // MARK: Swipe areas
 
     /// The area around the knob accepts straight swiping (right/up more, left/down less);
@@ -105,6 +125,14 @@ struct ControlView: View {
         inputKnob(size)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .modifier(ScrubGesture(size: size, degreesPerStep: inputDegreesPerStep, onStep: { c.stepInput($0) }))
+            .scrollWheel { notches in
+                inputScrollAcc += notches
+                let steps = Int(inputScrollAcc.rounded(.towardZero))
+                if steps != 0 {
+                    inputScrollAcc -= Double(steps)
+                    c.stepInput(max(-4, min(4, steps)))
+                }
+            }
     }
 
     private func volumeZone(_ size: CGFloat) -> some View {
@@ -112,6 +140,8 @@ struct ControlView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .modifier(ScrubGesture(size: size, degreesPerStep: volumeDegreesPerLED,
                                    onStep: { _ in }, onDegrees: { scrubVolume($0) }))
+            // Mouse wheel (macOS): one notch is a third of an LED step
+            .scrollWheel { scrubVolume($0 * 0.33 * volumeDegreesPerLED) }
     }
 
     // MARK: Volume
