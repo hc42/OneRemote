@@ -4,7 +4,9 @@ Native SwiftUI app that remotely controls an ONE / ONE HD amplifier over Bluetoo
 
 Documentation:
 
+- [Using the app and troubleshooting](docs/USAGE.md)
 - [BLE protocol](docs/PROTOCOL.md)
+- [Manual test checklist](docs/TESTING.md)
 - [Architecture decision records](docs/adr/README.md): why the app is built the way it is
 - [Notes for AI agents and contributors](AGENTS.md)
 
@@ -31,6 +33,8 @@ The power switch of the amplifier is purely mechanical and cannot be controlled 
 ```
 OneRemote/
 ├── project.yml                  XcodeGen configuration (generates the .xcodeproj)
+├── docs/USAGE.md                Using the app, troubleshooting
+├── docs/TESTING.md              Manual test checklist
 ├── docs/PROTOCOL.md             BLE protocol description
 ├── docs/adr/                    Architecture decision records (see docs/adr/README.md)
 └── OneRemote/

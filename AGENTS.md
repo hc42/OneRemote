@@ -17,8 +17,8 @@ protocol and `docs/adr/` for the reasons behind the design.
 - Platform-specific code goes in `#if os(iOS)`, `#if os(macOS)` or `#if canImport(UIKit)`.
   Typical offenders: `navigationBarTitleDisplayMode`, `toolbarBackground(for: .navigationBar)`,
   haptics, `NSEvent`. Check that both platforms still compile.
-- There is no test target yet. Verify behavior on a device; the amplifier accepts a single
-  BLE connection, so other controllers must be disconnected.
+- There is no test target yet. Verify behavior on a device using `docs/TESTING.md`; the amplifier
+  accepts a single BLE connection, so other controllers must be disconnected.
 
 ## Conventions
 
