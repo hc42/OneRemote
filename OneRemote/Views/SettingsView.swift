@@ -166,6 +166,9 @@ struct SettingsView: View {
                 Text(versionText)
                 Text("Free software under the MIT license.")
                 Text("Everything stays on your device. The app uses no network and collects no data.")
+                Link(destination: URL(string: "https://github.com/hc42/OneRemote/blob/main/docs/PRIVACY.md")!) {
+                    Text("Privacy policy")
+                }
                 Link("oneremote-hc@halfbrodt.org", destination: URL(string: "mailto:oneremote-hc@halfbrodt.org")!)
             }
             .font(.footnote)
