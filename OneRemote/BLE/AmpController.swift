@@ -1,5 +1,14 @@
 import Foundation
-import CoreBluetooth
+
+/// Waiting times of the connection handling. Tests use shorter ones.
+struct AmpTiming {
+    /// Give up a connection attempt after this long
+    var connectTimeout = 15.0
+    /// Pause before the automatic retry after a failed attempt
+    var retryDelay = 4.0
+
+    static let standard = AmpTiming()
+}
 
 final class AmpController: NSObject, ObservableObject {
     struct Found: Identifiable, Hashable {
@@ -41,19 +50,18 @@ final class AmpController: NSObject, ObservableObject {
     @Published var firmware = ""
     @Published var balance = 0
     /// Safety limit for the volume, persisted (default 60 of 90)
-    @Published var maxVolume: Int = {
-        let saved = UserDefaults.standard.integer(forKey: "maxVolume")
-        if saved == 0 { return AmpBLE.defaultMaxVolume }
-        return max(10, min(saved, AmpBLE.maxHardwareVolume))
-    }() {
-        didSet { UserDefaults.standard.set(maxVolume, forKey: "maxVolume") }
+    @Published var maxVolume: Int = AmpBLE.defaultMaxVolume {
+        didSet { defaults.set(maxVolume, forKey: "maxVolume") }
     }
     @Published var log: [String] = []
 
-    private var central: CBCentralManager!
-    private var peripherals: [UUID: CBPeripheral] = [:]
-    private var peripheral: CBPeripheral?
-    private var dataChar: CBCharacteristic?
+    private let transport: BLETransport
+    private let defaults: UserDefaults
+    private let timing: AmpTiming
+    private var peripherals: [UUID: BLEPeripheralLink] = [:]
+    private var peripheral: BLEPeripheralLink?
+    /// The data channel is set up (notifications on), commands can be sent
+    private var dataReady = false
     private var volumeWork: DispatchWorkItem?
     private var balanceWork: DispatchWorkItem?
     private var volumeFetchWork: DispatchWorkItem?
@@ -83,19 +91,25 @@ final class AmpController: NSObject, ObservableObject {
     private var candidate: SavedDevice?
     /// Target for connection attempts: the newly chosen device first, otherwise the saved one
     private var target: SavedDevice? { candidate ?? savedDevice }
-    private let connectTimeoutSeconds = 15.0
     /// Automatic retry after a failed connection attempt
     private var retryWork: DispatchWorkItem?
     private var attempt = 0
 
-    override init() {
+    init(transport: BLETransport = CoreBluetoothTransport(),
+         defaults: UserDefaults = .standard,
+         timing: AmpTiming = .standard) {
+        self.transport = transport
+        self.defaults = defaults
+        self.timing = timing
         super.init()
+        let saved = defaults.integer(forKey: "maxVolume")
+        if saved != 0 { maxVolume = max(10, min(saved, AmpBLE.maxHardwareVolume)) }
         loadSavedDevice()
-        central = CBCentralManager(delegate: self, queue: .main)
+        transport.delegate = self
     }
 
     private func loadSavedDevice() {
-        let d = UserDefaults.standard
+        let d = defaults
         if let s = d.string(forKey: Keys.id), let id = UUID(uuidString: s) {
             let saved = SavedDevice(id: id, name: d.string(forKey: Keys.name) ?? "ONE")
             savedDevice = saved
@@ -109,23 +123,23 @@ final class AmpController: NSObject, ObservableObject {
 
     private func save(_ device: SavedDevice) {
         savedDevice = device
-        UserDefaults.standard.set(device.id.uuidString, forKey: Keys.id)
-        UserDefaults.standard.set(device.name, forKey: Keys.name)
+        defaults.set(device.id.uuidString, forKey: Keys.id)
+        defaults.set(device.name, forKey: Keys.name)
     }
 
     // MARK: Actions
 
     func startScan() {
-        guard central.state == .poweredOn else { return }
+        guard transport.state == .poweredOn else { return }
         found.removeAll()
         peripherals.removeAll()
         scanning = true
         status = String(localized: "Searching for devices")
-        central.scanForPeripherals(withServices: nil, options: nil)
+        transport.scan()
     }
 
     func stopScan() {
-        central.stopScan()
+        transport.stopScan()
         scanning = false
     }
 
@@ -141,7 +155,7 @@ final class AmpController: NSObject, ObservableObject {
 
     /// Connect to the target device: the newly chosen one first, otherwise the saved one
     func connectToTarget() {
-        guard let saved = target, central.state == .poweredOn else { return }
+        guard let saved = target, transport.state == .poweredOn else { return }
         guard !connected else { return }
         abortConnect() // cleanly end any attempt in progress
         retryWork?.cancel()
@@ -149,7 +163,7 @@ final class AmpController: NSObject, ObservableObject {
         // with a new address after being switched off; then only scanning helps (like the manual selection).
         attempt += 1
         let useScan = attempt % 2 == 0
-        if !useScan, let p = central.retrievePeripherals(withIdentifiers: [saved.id]).first {
+        if !useScan, let p = transport.retrievePeripheral(id: saved.id) {
             peripherals[saved.id] = p
             beginConnect(p, name: saved.name)
             // Scan in parallel: if the amplifier shows up under a different identifier, the scan wins
@@ -160,7 +174,7 @@ final class AmpController: NSObject, ObservableObject {
             autoTarget = saved.id
             connecting = true
             status = String(localized: "Searching for \(saved.name) …")
-            central.scanForPeripherals(withServices: nil, options: nil)
+            transport.scan()
             armTimeout()
         }
     }
@@ -187,26 +201,25 @@ final class AmpController: NSObject, ObservableObject {
         connectToTarget()
     }
 
-    private func beginConnect(_ p: CBPeripheral, name: String) {
+    private func beginConnect(_ p: BLEPeripheralLink, name: String) {
         connectStarted = Date()
         pendingMessage = nil
         peripheral = p
-        p.delegate = self
         deviceName = name
         connecting = true
         status = String(localized: "Connecting to \(name) …")
-        central.connect(p, options: nil)
+        transport.connect(p)
         armTimeout()
     }
 
     /// After an unexpected loss: keep the connection request open. iOS connects by itself
     /// as soon as the amplifier is reachable again. Deliberately without a timeout.
-    private func reconnect(_ p: CBPeripheral) {
+    private func reconnect(_ p: BLEPeripheralLink) {
         connectStarted = Date()
         peripheral = p
         connecting = true
         status = String(localized: "Connection lost. Waiting for \(deviceName) …")
-        central.connect(p, options: nil)
+        transport.connect(p)
         // With a time limit: if the amplifier is not found, failConnect tries again (alternating with a scan)
         armTimeout()
         if let saved = target { watchForTarget(saved) }
@@ -215,9 +228,9 @@ final class AmpController: NSObject, ObservableObject {
     /// Scan in addition to the open connection request: as soon as the target device shows up (by identifier or name),
     /// connect using that result
     private func watchForTarget(_ saved: SavedDevice) {
-        guard central.state == .poweredOn, !scanning else { return }
+        guard transport.state == .poweredOn, !scanning else { return }
         autoTarget = saved.id
-        central.scanForPeripherals(withServices: nil, options: nil)
+        transport.scan()
     }
 
     /// Retry in a few seconds after a failure, as long as a saved device exists
@@ -230,7 +243,7 @@ final class AmpController: NSObject, ObservableObject {
             self.connectToTarget()
         }
         retryWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + timing.retryDelay, execute: work)
     }
 
     /// Bluetooth unusable: reset the state
@@ -248,7 +261,7 @@ final class AmpController: NSObject, ObservableObject {
             self.failConnect(String(localized: "Could not connect to \(self.deviceName). Is the amplifier on and in range?"))
         }
         connectTimeout = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + connectTimeoutSeconds, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + timing.connectTimeout, execute: work)
     }
 
     /// Abort a connection attempt with a message
@@ -265,8 +278,8 @@ final class AmpController: NSObject, ObservableObject {
         connectTimeout = nil
         autoTarget = nil
         connecting = false
-        if !scanning { central.stopScan() }
-        if let p = peripheral { central.cancelPeripheralConnection(p) }
+        if !scanning { transport.stopScan() }
+        if let p = peripheral { transport.cancelConnection(p) }
     }
 
     /// With AV Direct on the AV input the volume is fixed on the amplifier
@@ -429,15 +442,15 @@ final class AmpController: NSObject, ObservableObject {
     // MARK: Sending and receiving
 
     private func send(_ body: [UInt8]) {
-        guard let p = peripheral, let c = dataChar else { return }
+        guard let p = peripheral, dataReady else { return }
         let data = AmpBLE.frame(body)
         appendLog("→ " + hex(data))
-        if c.properties.contains(.write) {
-            p.writeValue(data, for: c, type: .withResponse)
+        if p.writesWithResponse {
+            p.write(data, withResponse: true)
         } else if p.canSendWriteWithoutResponse && writeQueue.isEmpty {
-            p.writeValue(data, for: c, type: .withoutResponse)
+            p.write(data, withResponse: false)
         } else {
-            writeQueue.append(data) // is sent in peripheralIsReady(toSendWriteWithoutResponse:)
+            writeQueue.append(data) // is sent in bleReadyToWriteWithoutResponse
         }
     }
 
@@ -480,11 +493,11 @@ final class AmpController: NSObject, ObservableObject {
     }
 }
 
-// MARK: - CoreBluetooth
+// MARK: - Bluetooth events
 
-extension AmpController: CBCentralManagerDelegate {
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        switch central.state {
+extension AmpController: BLETransportDelegate {
+    func bleStateChanged(_ state: BLEState) {
+        switch state {
         case .poweredOn:
             status = String(localized: "Bluetooth ready")
             if showScan {
@@ -498,32 +511,30 @@ extension AmpController: CBCentralManagerDelegate {
         case .unauthorized:
             markOffline()
             status = String(localized: "Bluetooth access denied (check system settings)")
-        default:
+        case .unavailable:
             markOffline()
             status = String(localized: "Bluetooth unavailable")
         }
     }
 
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
-                        advertisementData: [String: Any], rssi RSSI: NSNumber) {
-        let advName = (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? peripheral.name
+    func bleDidDiscover(_ link: BLEPeripheralLink, advertisedName advName: String?) {
         // Also recognize by name: after being switched off the amplifier can show up with a new address
         if let targetID = autoTarget,
-           peripheral.identifier == targetID || (advName != nil && advName == target?.name) {
+           link.id == targetID || (advName != nil && advName == target?.name) {
             autoTarget = nil
-            central.stopScan()
-            peripherals[peripheral.identifier] = peripheral
+            transport.stopScan()
+            peripherals[link.id] = link
             // End a still-open request to another (stale) peripheral
-            if let old = self.peripheral, old.identifier != peripheral.identifier {
-                central.cancelPeripheralConnection(old)
+            if let old = peripheral, old.id != link.id {
+                transport.cancelConnection(old)
             }
-            beginConnect(peripheral, name: target?.name ?? peripheral.name ?? "ONE")
+            beginConnect(link, name: target?.name ?? link.name ?? "ONE")
             return
         }
-        let name = (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? peripheral.name ?? ""
+        let name = advName ?? ""
         guard name.hasPrefix(AmpBLE.namePrefix) else { return }
-        peripherals[peripheral.identifier] = peripheral
-        let item = Found(id: peripheral.identifier, name: name)
+        peripherals[link.id] = link
+        let item = Found(id: link.id, name: name)
         if let i = found.firstIndex(where: { $0.id == item.id }) {
             found[i] = item
         } else {
@@ -531,22 +542,22 @@ extension AmpController: CBCentralManagerDelegate {
         }
     }
 
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+    func bleDidConnect(_ link: BLEPeripheralLink) {
         status = String(localized: "Connected, discovering services …")
-        peripheral.discoverServices([AmpBLE.service])
+        link.discoverAndSubscribe()
     }
 
-    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+    func bleDidFailToConnect(_ link: BLEPeripheralLink, error: Error?) {
         failConnect(String(localized: "Connection failed: \(error?.localizedDescription ?? String(localized: "unknown"))"))
     }
 
-    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+    func bleDidDisconnect(_ link: BLEPeripheralLink, error: Error?) {
         let wasConnected = connected
         connected = false
         connecting = false
         connectTimeout?.cancel()
         avDirectKnown = false
-        dataChar = nil
+        dataReady = false
         writeQueue.removeAll()
         self.peripheral = nil
         if let message = pendingMessage {
@@ -554,44 +565,32 @@ extension AmpController: CBCentralManagerDelegate {
             pendingMessage = nil
         } else if wasConnected && !showScan {
             // Unexpected loss (amplifier off, out of range): reconnect automatically
-            reconnect(peripheral)
+            reconnect(link)
         } else {
             status = error.map { String(localized: "Disconnected: \($0.localizedDescription)") } ?? String(localized: "Disconnected")
         }
     }
-}
 
-extension AmpController: CBPeripheralDelegate {
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        guard let service = peripheral.services?.first(where: { $0.uuid == AmpBLE.service }) else {
+    func bleSubscriptionFailed(_ link: BLEPeripheralLink, failure: BLELinkFailure) {
+        switch failure {
+        case .serviceNotFound:
             failConnect(String(localized: "Control service not found"))
-            return
-        }
-        peripheral.discoverCharacteristics([AmpBLE.dataCharacteristic], for: service)
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        guard let c = service.characteristics?.first(where: { $0.uuid == AmpBLE.dataCharacteristic }) else {
+        case .characteristicNotFound:
             failConnect(String(localized: "Data characteristic not found"))
-            return
-        }
-        dataChar = c
-        peripheral.setNotifyValue(true, for: c)
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
+        case .notificationsFailed(let error):
             // Typical on first use: confirm the pairing dialog, then connect again
             failConnect(String(localized: "Enabling notifications failed: \(error.localizedDescription)"))
-            return
         }
-        guard characteristic.isNotifying else { return }
+    }
+
+    func bleDidSubscribe(_ link: BLEPeripheralLink) {
+        dataReady = true
         connected = true
         connecting = false
         attempt = 0
         retryWork?.cancel()
         autoTarget = nil
-        if !scanning { central.stopScan() }
+        if !scanning { transport.stopScan() }
         connectTimeout?.cancel()
         status = String(localized: "Connected")
         appendLog(String(format: "Ready after %.1f s", Date().timeIntervalSince(connectStarted)))
@@ -599,26 +598,25 @@ extension AmpController: CBPeripheralDelegate {
         if let device = candidate {
             save(device)
             candidate = nil
-        } else if let saved = savedDevice, saved.id != peripheral.identifier {
+        } else if let saved = savedDevice, saved.id != link.id {
             // The amplifier reported itself with a new identifier (name matches): remember the new identifier
-            save(SavedDevice(id: peripheral.identifier, name: saved.name))
+            save(SavedDevice(id: link.id, name: saved.name))
         }
         refresh()
     }
 
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard characteristic.uuid == AmpBLE.dataCharacteristic, let data = characteristic.value else { return }
+    func bleDidReceive(_ data: Data, from link: BLEPeripheralLink) {
         handle([UInt8](data))
     }
 
-    func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
-        guard let c = dataChar else { return }
-        while !writeQueue.isEmpty, peripheral.canSendWriteWithoutResponse {
-            peripheral.writeValue(writeQueue.removeFirst(), for: c, type: .withoutResponse)
+    func bleReadyToWriteWithoutResponse(_ link: BLEPeripheralLink) {
+        guard dataReady else { return }
+        while !writeQueue.isEmpty, link.canSendWriteWithoutResponse {
+            link.write(writeQueue.removeFirst(), withResponse: false)
         }
     }
 
-    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error { appendLog("Write error: \(error.localizedDescription)") }
+    func bleWriteFailed(_ link: BLEPeripheralLink, error: Error) {
+        appendLog("Write error: \(error.localizedDescription)")
     }
 }

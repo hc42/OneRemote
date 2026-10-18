@@ -32,3 +32,6 @@ offers it; the tests run from Xcode (Cmd+U) or `xcodebuild test`.
 - The localization test uses a small scanner for string literals. It knows which calls show text
   to the user; a new kind of call needs to be added to its list.
 - Code that is compiled into both the app and the tests must not depend on app-only files.
+- `AmpController` talks to Bluetooth only through the `BLETransport` protocol. The real
+  implementation (`CoreBluetoothTransport`) wraps CoreBluetooth; tests can substitute a simulated
+  amplifier. The controller also takes its `UserDefaults` and its waiting times as parameters.
