@@ -17,7 +17,7 @@ protocol and `docs/adr/` for the reasons behind the design.
 - Platform-specific code goes in `#if os(iOS)`, `#if os(macOS)` or `#if canImport(UIKit)`.
   Typical offenders: `navigationBarTitleDisplayMode`, `toolbarBackground(for: .navigationBar)`,
   haptics, `NSEvent`. Check that both platforms still compile.
-- Unit tests live in `OneRemoteTests/` and run with Cmd+U or `xcodebuild test -scheme OneRemote`
+- Unit tests live in `OneRemoteTests/` and run with Cmd+U or `scripts/test.sh` (all tests incl. UI tests; `scripts/test.sh mac` is the fast subset)
   (macOS destination or any iOS simulator). They compile only the pure logic files listed in
   `project.yml`, so put testable logic in such files and add the file to the test target (ADR 0018).
 - Behavior on the real amplifier is verified with `docs/TESTING.md`; the amplifier accepts a

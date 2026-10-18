@@ -2,8 +2,9 @@
 import Foundation
 
 /// A simulated amplifier instead of Bluetooth, for the UI tests and for store screenshots.
-/// Only compiled into debug builds and only used with the launch argument `-simulated-amplifier`
-/// (plus `-simulated-paired` to start with the amplifier already chosen).
+/// Only compiled into debug builds and only used with the launch argument `-simulated-amplifier YES`
+/// (plus `-simulated-paired YES` to start with the amplifier already chosen).
+/// Write the options as `-key YES`: a lone argument would be treated as a file to open on the Mac.
 /// It answers the same frames as the real amplifier (see docs/PROTOCOL.md).
 final class SimulatedAmplifier: BLETransport {
     static let deviceID = UUID(uuidString: "00000000-0000-0000-0000-0000000000A1")!

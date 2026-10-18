@@ -1,0 +1,29 @@
+{
+  "configurations": [
+    {
+      "id": "BB98A4B1-C49C-4407-B0F0-622EC5A23D50",
+      "name": "Configuration 1",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "testTimeoutsEnabled": true
+  },
+  "testTargets": [
+    {
+      "target": {
+        "containerPath": "container:OneRemote.xcodeproj",
+        "identifier": "BCDFD599025E8E53DF3B5AC9",
+        "name": "OneRemoteTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:OneRemote.xcodeproj",
+        "identifier": "B272397609269823EA8F36F8",
+        "name": "OneRemoteUITests"
+      }
+    }
+  ],
+  "version": 1
+}

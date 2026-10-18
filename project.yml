@@ -36,13 +36,14 @@ targets:
       - path: OneRemote
         excludes:
           - "*.entitlements"
-    # The scheme also runs the unit tests (Cmd+U)
+    # Test plans (TestPlans/): "Unit" is the default for Cmd+U, "UI" starts the app against a
+    # simulated amplifier and takes longer, "All" runs both. Pick one in the scheme's test action.
     scheme:
-      testTargets:
-        - OneRemoteTests
-        # UI tests start the app and take a while: not part of Cmd+U, run them from the test navigator
-        - name: OneRemoteUITests
-          skipped: true
+      testPlans:
+        - path: TestPlans/Unit.xctestplan
+          defaultPlan: true
+        - path: TestPlans/UI.xctestplan
+        - path: TestPlans/All.xctestplan
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemote

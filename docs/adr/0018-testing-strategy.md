@@ -20,16 +20,21 @@ Tests are added in layers, cheapest first:
    placeholders match.
 3. `AmpController` tests with a simulated amplifier (`FakeAmplifier.swift`): connecting,
    reconnecting by name, connection loss, retry, rate limits, AV Direct lock.
-4. **UI tests (XCUITest)** start the app with the launch argument `-simulated-amplifier`
+4. **UI tests (XCUITest)** start the app with the launch argument `-simulated-amplifier YES`
    (debug builds only). `SimulatedAmplifier` then replaces Bluetooth and answers the same frames
    as the amplifier, so the tests cover search, connecting, muting and swiping end to end.
-   `-simulated-paired` starts with the amplifier already chosen. The tests attach screenshots,
-   which can serve as store screenshots. They are skipped in Cmd+U because they launch the app;
-   run `OneRemoteUITests` from the test navigator.
+   `-simulated-paired YES` starts with the amplifier already chosen. The tests attach screenshots,
+   which can serve as store screenshots. They are not part of the default Cmd+U because they
+   launch the app. The suites are grouped in test plans (`TestPlans/`: Unit, UI, All), which
+   Xcode and `xcodebuild -testPlan` share.
+   On the Mac only the start test runs: there the test runner cannot click in the app (the app stops
+   answering the accessibility requests after the first click, although it works by hand), so the
+   clicking tests are skipped and the Mac is checked manually.
 5. **Real hardware** stays a manual check (`docs/TESTING.md`).
 
 Continuous integration is deliberately postponed until the repository is hosted somewhere that
-offers it; the tests run from Xcode (Cmd+U) or `xcodebuild test`.
+offers it; the tests run from Xcode (Cmd+U) or with `scripts/test.sh`, which runs every suite
+from the command line and reports one result.
 
 ## Consequences
 - A change to the scale tables, the protocol or a UI text fails a test instead of being found by

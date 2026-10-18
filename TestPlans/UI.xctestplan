@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "id": "EC76EFE2-3E3C-4130-AD11-4236F64B6AEF",
+      "name": "Configuration 1",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "testTimeoutsEnabled": true
+  },
+  "testTargets": [
+    {
+      "target": {
+        "containerPath": "container:OneRemote.xcodeproj",
+        "identifier": "B272397609269823EA8F36F8",
+        "name": "OneRemoteUITests"
+      }
+    }
+  ],
+  "version": 1
+}
