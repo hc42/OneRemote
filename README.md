@@ -82,3 +82,8 @@ English is the source and fallback language. German is provided in `OneRemote/Re
 The reasons behind the main design choices, including options that were tried and dropped, are
 recorded as architecture decision records in [`docs/adr/`](docs/adr/README.md). Add a record when
 you make a decision of that kind.
+
+## License
+
+[MIT](LICENSE). This is an independent, unofficial project and is not affiliated with the
+manufacturer of the amplifier.
