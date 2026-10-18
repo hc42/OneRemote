@@ -74,3 +74,5 @@ Read the matching ADR before changing these areas:
 
 - Small, focused commits with an imperative subject line.
 - `OneRemote.xcodeproj`, `xcuserdata` and `DerivedData` are ignored on purpose.
+- Commits carry the project identity `Hans-Christian Halfbrodt <oneremote-hc@halfbrodt.org>` (set in the
+  repository's git config). Do not commit with a private address; check `git config user.email` first.
