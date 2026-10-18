@@ -21,5 +21,6 @@ it and the old one is marked "Superseded by".
 | [0013](0013-desktop-input.md) | Keyboard shortcuts and mouse wheel | Accepted |
 | [0014](0014-splash-and-launch-screen.md) | Launch screen plus in-app splash | Accepted |
 | [0015](0015-mit-license.md) | MIT license | Accepted |
+| [0016](0016-privacy-by-design.md) | Privacy by design: local only, no network | Accepted |
 
 New record: copy the newest file, increase the number, add it to this table.

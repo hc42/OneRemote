@@ -6,6 +6,7 @@ Documentation:
 
 - [Using the app and troubleshooting](docs/USAGE.md)
 - [BLE protocol](docs/PROTOCOL.md)
+- Privacy: [English](docs/PRIVACY.md), [Deutsch](docs/PRIVACY.de.md)
 - [Manual test checklist](docs/TESTING.md)
 - [Architecture decision records](docs/adr/README.md): why the app is built the way it is
 - [Notes for AI agents and contributors](AGENTS.md)
@@ -36,11 +37,13 @@ OneRemote/
 ├── docs/USAGE.md                Using the app, troubleshooting
 ├── docs/TESTING.md              Manual test checklist
 ├── docs/PROTOCOL.md             BLE protocol description
+├── docs/PRIVACY.md, PRIVACY.de.md  Privacy policy
 ├── docs/adr/                    Architecture decision records (see docs/adr/README.md)
 └── OneRemote/
     ├── OneRemoteApp.swift       App entry point (@main)
     ├── OneRemote-macOS.entitlements   Sandbox + Bluetooth (macOS only)
     ├── Assets.xcassets          App icon, logo, launch screen images
+    ├── PrivacyInfo.xcprivacy    Privacy manifest (no tracking, no data collected)
     ├── BLE/
     │   ├── AmpProtocol.swift    UUIDs, commands, frame format, inputs
     │   └── AmpController.swift  CoreBluetooth: scan, connect, send, parse, reconnect

@@ -29,6 +29,9 @@ protocol and `docs/adr/` for the reasons behind the design.
   automatically; text stored in a `String` needs `String(localized:)`. See ADR 0011.
 - Do not use the amplifier manufacturer's brand in names, texts or assets. The product is
   "One Remote"; types use the `Amp` prefix. "ONE" / "ONE HD" are model names only.
+- Keep the app local: no networking, analytics or third-party SDKs, and no new persistent data
+  or required-reason APIs without updating `OneRemote/PrivacyInfo.xcprivacy`, `docs/PRIVACY*.md`
+  and a new ADR (see ADR 0016).
 - Keep the app responsive: BLE writes for volume and balance are rate limited and the UI
   updates optimistically (`AmpController`).
 - Knobs must stay usable with VoiceOver, keyboard and mouse (ADR 0012, 0013).
