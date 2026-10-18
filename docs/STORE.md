@@ -4,8 +4,9 @@ Texts for App Store Connect, in English (default) and German. Limits: name 30 ch
 promotional text 170, keywords 100 (comma separated, no spaces), description 4000.
 
 The amplifier maker's name and model names are third-party trademarks. They are not used in the name,
-subtitle or keywords; the description says what the app works with in general terms and states that it is
-unofficial. Check this again before every submission.
+subtitle or keywords. The description (not the name) states plainly that the app works only with the
+**ONE and ONE HD** amplifiers and that it is unofficial, so nobody buys it for another device. Check this
+again before every submission.
 
 ## English (U.S.)
 
@@ -17,7 +18,7 @@ A calm, focused remote for your amplifier: two big knobs for volume and input, j
 **Keywords:** amplifier,remote,bluetooth,volume,input,hifi,audio,stereo,knob,controller,dac
 
 **Description:**
-One Remote controls your compatible Bluetooth amplifier from your iPhone, iPad or Mac.
+One Remote controls ONE and ONE HD amplifiers over Bluetooth from your iPhone, iPad or Mac. It works only with these amplifiers and not with any other device.
 
 Two large knobs, just like on the front panel: one for the input, one for the volume. Turn them, swipe them or
 tap them. The LEDs light up the way they do on the device, and the volume changes in single dB steps.
@@ -37,7 +38,7 @@ No account, no analytics, no tracking. The app only talks to your amplifier over
 settings on your device.
 
 One Remote is an independent app and is not affiliated with or endorsed by the amplifier's manufacturer.
-It needs a compatible amplifier with Bluetooth.
+It requires a ONE or ONE HD amplifier. Without one you can try the app with the built-in demo.
 
 **What's new (first version):** First release.
 
@@ -51,7 +52,7 @@ Eine ruhige, klare Fernbedienung für deinen Verstärker: zwei große Regler fü
 **Schlüsselwörter:** verstärker,fernbedienung,bluetooth,lautstärke,eingang,hifi,audio,stereo,regler,dac
 
 **Beschreibung:**
-One Remote steuert deinen kompatiblen Bluetooth-Verstärker von iPhone, iPad oder Mac aus.
+One Remote steuert ONE- und ONE-HD-Verstärker per Bluetooth von iPhone, iPad oder Mac aus. Die App funktioniert nur mit diesen Verstärkern, nicht mit anderen Geräten.
 
 Zwei große Regler wie an der Frontplatte: einer für den Eingang, einer für die Lautstärke. Du kannst sie drehen,
 wischen oder antippen. Die LEDs leuchten wie am Gerät, und die Lautstärke ändert sich in einzelnen dB-Schritten.
@@ -71,7 +72,7 @@ Kein Konto, keine Analyse, kein Tracking. Die App spricht nur per Bluetooth mit 
 paar Einstellungen auf deinem Gerät.
 
 One Remote ist eine unabhängige App und steht in keiner Verbindung zum Hersteller des Verstärkers und wird von
-ihm nicht empfohlen. Du brauchst einen kompatiblen Verstärker mit Bluetooth.
+ihm nicht empfohlen. Du brauchst einen ONE- oder ONE-HD-Verstärker. Ohne ihn kannst du die App mit dem eingebauten Demo-Modus ausprobieren.
 
 **Neu in dieser Version:** Erste Veröffentlichung.
 
@@ -96,6 +97,6 @@ The reviewers do not own the amplifier. Without a way to try the app, it is reje
 Implemented (ADR 0019): the device search ends with **Try the demo**, which controls a simulated amplifier in every
 build. Put this in the App Review notes:
 
-> The app controls a Bluetooth amplifier that reviewers do not have. Open the app, scroll to the end of the device
+> The app controls ONE and ONE HD Bluetooth amplifiers (it works with no other device), which reviewers do not have. Open the app, scroll to the end of the device
 > search and tap "Try the demo": it shows all controls (volume, input, balance, settings) with a simulated amplifier.
 > The demo uses no Bluetooth and no network. "Exit demo" in the settings returns to the search.
