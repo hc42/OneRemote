@@ -24,7 +24,7 @@ Tests are added in layers, cheapest first:
    (debug builds only). `SimulatedAmplifier` then replaces Bluetooth and answers the same frames
    as the amplifier, so the tests cover search, connecting, muting and swiping end to end.
    `-simulated-paired YES` starts with the amplifier already chosen. The tests attach screenshots,
-   which can serve as store screenshots. They are not part of the default Cmd+U because they
+   and the separate test plan `Screenshots` (`scripts/screenshots.sh`) produces the store screenshots. They are not part of the default Cmd+U because they
    launch the app. The suites are grouped in test plans (`TestPlans/`: Unit, UI, All), which
    Xcode and `xcodebuild -testPlan` share.
    On the Mac only the start test runs: there the test runner cannot click in the app (the app stops

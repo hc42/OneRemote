@@ -60,3 +60,11 @@ Preparation: no other controller connected, volume limit at the default, headpho
 - [ ] Window opens, Bluetooth permission works with the sandbox.
 - [ ] Arrow keys and space work; the mouse wheel changes volume and input over their areas.
 - [ ] No iOS-only UI artifacts (navigation bar title, haptics).
+
+## Store screenshots
+
+`scripts/screenshots.sh` takes the App Store screenshots (controls, muted, settings, search) with the UI test
+`ScreenshotTests` against the simulated amplifier. It runs on the newest "Pro Max" iPhone (6.9 inch) and the newest
+13-inch iPad Pro simulator, sets the status bar to 9:41 and puts the images in `build/screenshots/<device>/`.
+Choose other devices with `IPHONE="..."` and `IPAD="..."`. The test plan `Screenshots` is not part of the normal runs.
+Mac screenshots are taken by hand.

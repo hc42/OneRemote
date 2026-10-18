@@ -44,6 +44,7 @@ targets:
           defaultPlan: true
         - path: TestPlans/UI.xctestplan
         - path: TestPlans/All.xctestplan
+        - path: TestPlans/Screenshots.xctestplan
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemote

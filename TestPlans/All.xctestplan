@@ -22,7 +22,10 @@
         "containerPath": "container:OneRemote.xcodeproj",
         "identifier": "B272397609269823EA8F36F8",
         "name": "OneRemoteUITests"
-      }
+      },
+      "skippedTests": [
+        "ScreenshotTests"
+      ]
     }
   ],
   "version": 1
