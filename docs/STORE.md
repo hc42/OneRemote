@@ -82,7 +82,7 @@ ihm nicht empfohlen. Du brauchst einen ONE- oder ONE-HD-Verstärker. Ohne ihn ka
 - **Price:** free
 - **Age rating:** 4+ (no objectionable content)
 - **Support URL / Marketing URL:** https://github.com/hc42/OneRemote
-- **Privacy policy URL:** https://github.com/hc42/OneRemote/blob/main/docs/PRIVACY.md (the German version is `PRIVACY.de.md` in the same folder)
+- **Privacy policy URL:** https://github.com/hc42/OneRemote/blob/main/docs/PRIVACY.md (the German version is `PRIVACY.de.md` in the same folder; the app links to the one matching its language)
 - **App privacy ("nutrition label"):** Data Not Collected
 - **Contact for review:** `oneremote-hc@halfbrodt.org`
 

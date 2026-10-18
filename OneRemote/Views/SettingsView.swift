@@ -159,6 +159,13 @@ struct SettingsView: View {
         return String(localized: "Version \(version) (\(build))")
     }
 
+    /// The privacy policy in the language the app is shown in (German or English)
+    private var privacyURL: URL {
+        let german = Bundle.main.preferredLocalizations.first == "de"
+        let file = german ? "PRIVACY.de.md" : "PRIVACY.md"
+        return URL(string: "https://github.com/hc42/OneRemote/blob/main/docs/\(file)")!
+    }
+
     private var aboutSection: some View {
         GroupBox("About") {
             VStack(alignment: .leading, spacing: 6) {
@@ -166,7 +173,7 @@ struct SettingsView: View {
                 Text(versionText)
                 Text("Free software under the MIT license.")
                 Text("Everything stays on your device. The app uses no network and collects no data.")
-                Link(destination: URL(string: "https://github.com/hc42/OneRemote/blob/main/docs/PRIVACY.md")!) {
+                Link(destination: privacyURL) {
                     Text("Privacy policy")
                 }
                 Link(destination: URL(string: "https://github.com/hc42/OneRemote")!) {
