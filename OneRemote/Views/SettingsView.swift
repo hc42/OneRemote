@@ -71,14 +71,16 @@ struct SettingsView: View {
                     in: 0...20,
                     step: 1
                 )
-                HStack {
-                    Text("Left").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
+                // The button is centered on the slider, whatever the widths of the two labels are
+                ZStack {
+                    HStack {
+                        Text("Left").font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Text("Right").font(.caption).foregroundStyle(.secondary)
+                    }
                     Button("Center") { c.setBalance(10) }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                    Spacer()
-                    Text("Right").font(.caption).foregroundStyle(.secondary)
                 }
                 if c.headphones {
                     Text("Balance is disabled while headphones are connected.")
@@ -131,14 +133,15 @@ struct SettingsView: View {
         GroupBox("Sensitivity") {
             VStack(spacing: 8) {
                 Slider(value: $sensitivity, in: 0...1)
-                HStack {
-                    Text("Sluggish").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
+                ZStack {
+                    HStack {
+                        Text("Sluggish").font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Text("Sensitive").font(.caption).foregroundStyle(.secondary)
+                    }
                     Button("Default") { sensitivity = 0.5 }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                    Spacer()
-                    Text("Sensitive").font(.caption).foregroundStyle(.secondary)
                 }
                 Text("Applies to turning and swiping for volume and input.")
                     .font(.caption)
