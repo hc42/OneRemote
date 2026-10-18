@@ -63,18 +63,52 @@ OneRemote/
         └── AVDirectView.swift   AV Direct with two-step confirmation
 ```
 
-## Generate and run the project
+## Build and install
+
+One Remote works only with ONE and ONE HD amplifiers. Without one you can still try the app: choose
+"Try the demo" in the device search.
+
+### Requirements
+
+- A Mac with a current Xcode (iOS 16 / macOS 13 or newer as deployment targets, see `project.yml`)
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
+- An Apple ID. The free one is enough to run the app on your own devices (see below).
+
+### Steps
 
 ```
-brew install xcodegen
+git clone https://github.com/hc42/OneRemote.git
 cd OneRemote
+cp Config/Local.xcconfig.example Config/Local.xcconfig   # enter your team ID, see below
 xcodegen generate
 open OneRemote.xcodeproj
 ```
 
-To sign with your own Apple developer team, copy `Config/Local.xcconfig.example` to
-`Config/Local.xcconfig` (ignored by git), enter your team ID and run `xcodegen generate` again.
-Then choose "My Mac" or a connected iPhone as the run destination.
+1. Your team ID: in Xcode under Settings > Accounts add your Apple ID; the ID of the "Personal Team"
+   (or of your paid team) is shown at Signing & Capabilities after you select a team once. Put it into
+   `Config/Local.xcconfig` as `DEVELOPMENT_TEAM = ...` (the file is ignored by git), then run
+   `xcodegen generate` again.
+2. Choose the run destination: "My Mac", or your iPhone/iPad (connect it, enable Developer Mode under
+   Settings > Privacy & Security, trust the computer).
+3. Press Run. The simulator has no Bluetooth; there you can only use the demo.
+
+The bundle identifier (`de.halfbrodt.OneRemote`) belongs to the author's team. If Xcode reports that it
+cannot be registered for your team, change `PRODUCT_BUNDLE_IDENTIFIER` for the three targets in `project.yml`
+(use your own prefix) and run `xcodegen generate` again.
+
+### Limits of a free Apple ID
+
+- On iPhone and iPad the app stops working after 7 days. Run it from Xcode again (cable or Wi-Fi);
+  the settings are kept as long as you do not delete the app.
+- Only a few apps can be installed this way at the same time per device.
+- A paid Apple Developer Program membership removes these limits and is needed for TestFlight and the
+  App Store.
+- A Mac build runs without expiry when you keep the signed app (Product > Show Build Folder in Finder,
+  `Release` configuration, copy `One Remote.app` to Applications).
+
+### Tests
+
+`scripts/test.sh` runs the unit tests and the UI tests, see [`docs/TESTING.md`](docs/TESTING.md).
 
 ## Notes
 
