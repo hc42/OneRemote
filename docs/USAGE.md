@@ -62,6 +62,7 @@ volume knob to mute.
 | Volume limit | The knobs and keys do not go above this value (default -30 dB). It is stored. |
 | Sensitivity | How far you must turn or swipe per step, from sluggish to sensitive. "Default" resets it. |
 | AV Direct | Switches the amplifier to power-amplifier mode, see the warning below. |
+| About | Version, license, privacy summary and the contact address. |
 | Device info | Serial number, firmware, DAC model, headphones, AV Direct state. "Refresh values" queries them again. |
 
 ### AV Direct (read before use)

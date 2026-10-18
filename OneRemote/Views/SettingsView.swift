@@ -18,6 +18,7 @@ struct SettingsView: View {
                 sensitivitySection
                 AVDirectSection()
                 infoSection
+                aboutSection
             }
             .padding()
             .frame(maxWidth: 500)
@@ -148,6 +149,30 @@ struct SettingsView: View {
     }
 
     // MARK: Device info
+
+    // MARK: About
+
+    private var versionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "–"
+        let build = info?["CFBundleVersion"] as? String ?? "–"
+        return String(localized: "Version \(version) (\(build))")
+    }
+
+    private var aboutSection: some View {
+        GroupBox("About") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("One Remote").font(.headline)
+                Text(versionText)
+                Text("Free software under the MIT license.")
+                Text("Everything stays on your device. The app uses no network and collects no data.")
+                Link("oneremote-hc@halfbrodt.org", destination: URL(string: "mailto:oneremote-hc@halfbrodt.org")!)
+            }
+            .font(.footnote)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .contain)
+        }
+    }
 
     private var infoSection: some View {
         GroupBox("Device info") {

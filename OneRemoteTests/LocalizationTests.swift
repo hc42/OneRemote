@@ -6,6 +6,7 @@ final class LocalizationTests: XCTestCase {
     /// Texts that are intentionally the same in both languages
     private let sameInBothLanguages: Set<String> = [
         "Balance", "AV Direct", "AV Direct: %@", "Firmware: %@", "Bluetooth", "Demo",
+        "One Remote", "Version %@ (%@)",
     ]
 
     /// Calls whose first string argument is shown to the user and therefore needs a translation

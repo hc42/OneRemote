@@ -87,3 +87,6 @@
 "Shows a simulated amplifier. Nothing is sent over Bluetooth." = "Zeigt einen simulierten Verstärker. Es wird nichts per Bluetooth gesendet.";
 "Demo mode: this is a simulated amplifier." = "Demo-Modus: Dies ist ein simulierter Verstärker.";
 "Exit demo" = "Demo beenden";
+"About" = "Info";
+"Free software under the MIT license." = "Freie Software unter der MIT-Lizenz.";
+"Everything stays on your device. The app uses no network and collects no data." = "Alles bleibt auf deinem Gerät. Die App nutzt kein Netzwerk und sammelt keine Daten.";
