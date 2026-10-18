@@ -23,5 +23,6 @@ it and the old one is marked "Superseded by".
 | [0015](0015-mit-license.md) | MIT license | Accepted |
 | [0016](0016-privacy-by-design.md) | Privacy by design: local only, no network | Accepted |
 | [0017](0017-versioning-and-releases.md) | Versioning, changelog and release steps | Accepted |
+| [0018](0018-testing-strategy.md) | Testing strategy | Accepted |
 
 New record: copy the newest file, increase the number, add it to this table.

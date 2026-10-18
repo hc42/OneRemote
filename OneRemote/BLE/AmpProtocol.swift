@@ -53,6 +53,12 @@ enum AmpBLE {
     static func frame(_ body: [UInt8]) -> Data {
         Data([start, filler] + body + [end])
     }
+
+    /// Body of a command with a two-digit value, for example volume 5: `V` `2` `0` `5`
+    static func valueBody(_ cmd: UInt8, value: Int) -> [UInt8] {
+        let digits = Array(String(format: "%02d", value).utf8)
+        return [cmd, UInt8(ascii: "2"), digits[0], digits[1]]
+    }
 }
 
 /// Inputs of the One HD (DAC variant). The raw values are ASCII digits.

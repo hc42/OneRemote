@@ -36,6 +36,7 @@ The power switch of the amplifier is purely mechanical and cannot be controlled 
 OneRemote/
 ├── project.yml                  XcodeGen configuration (generates the .xcodeproj), versions
 ├── CHANGELOG.md                 Notable changes per release
+├── OneRemoteTests/              Unit tests (LED scale, protocol, parser, translations)
 ├── docs/USAGE.md                Using the app, troubleshooting
 ├── docs/TESTING.md              Manual test checklist
 ├── docs/PROTOCOL.md             BLE protocol description

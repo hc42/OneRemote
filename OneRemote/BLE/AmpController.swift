@@ -300,8 +300,7 @@ final class AmpController: NSObject, ObservableObject {
         guard let v = pendingVolume else { return }
         pendingVolume = nil
         lastVolumeSend = Date()
-        let digits = Array(String(format: "%02d", v).utf8)
-        send([AmpBLE.Cmd.volume, UInt8(ascii: "2"), digits[0], digits[1]])
+        send(AmpBLE.valueBody(AmpBLE.Cmd.volume, value: v))
         // After the last send, fetch the real value from the amplifier
         requestVolume()
     }
@@ -382,8 +381,7 @@ final class AmpController: NSObject, ObservableObject {
         guard let v = pendingBalance else { return }
         pendingBalance = nil
         lastBalanceSend = Date()
-        let digits = Array(String(format: "%02d", v).utf8)
-        send([AmpBLE.Cmd.balance, UInt8(ascii: "2"), digits[0], digits[1]])
+        send(AmpBLE.valueBody(AmpBLE.Cmd.balance, value: v))
         // After the last send, fetch the real value from the amplifier
         balanceFetchWork?.cancel()
         let fetch = DispatchWorkItem { [weak self] in
@@ -445,40 +443,30 @@ final class AmpController: NSObject, ObservableObject {
 
     private func handle(_ d: [UInt8]) {
         appendLog("← " + hex(Data(d)))
-        guard d.count >= 5, d[0] == AmpBLE.start else { return }
-        let cmd = d[2]
-        let b = d[4]
-        let zero = UInt8(ascii: "0")
+        guard let event = AmpParser.parse(d) else { return }
 
-        switch cmd {
-        case AmpBLE.Cmd.avDirect:
-            avDirect = (b != zero)
+        switch event {
+        case .avDirect(let on):
+            avDirect = on
             avDirectKnown = true
-        case AmpBLE.Cmd.hasDAC: hasDAC = (b != zero)
-        case AmpBLE.Cmd.headphones:
-            headphones = (b != zero)
+        case .hasDAC(let yes): hasDAC = yes
+        case .headphones(let yes):
+            headphones = yes
             requestVolume()
-        case AmpBLE.Cmd.mute:
-            muted = (b != zero)
+        case .mute(let on):
+            muted = on
             requestVolume()
-        case AmpBLE.Cmd.input:
+        case .input(let new):
             // Do not overwrite our own choice that has not been sent yet or has just been sent
             if pendingInput == nil, Date().timeIntervalSince(lastInputSend) > 0.6 {
-                input = AmpInput(rawValue: b)
+                input = new
             }
-        case AmpBLE.Cmd.volume:
-            if !volumeEchoGuard, d.count >= 6, let v = Int(String(decoding: d[4...5], as: UTF8.self)) { volume = v }
-        case AmpBLE.Cmd.balance:
-            if !balanceEchoGuard, d.count >= 6, let v = Int(String(decoding: d[4...5], as: UTF8.self)) { balance = v }
-        case AmpBLE.Cmd.version:
-            if d.count >= 6 {
-                let s = String(decoding: d[4...5], as: UTF8.self)
-                firmware = String(s.prefix(1)) + "." + String(s.dropFirst())
-            }
-        case AmpBLE.Cmd.serial:
-            // The payload ends before the final end character
-            if d.count > 5 { serial = String(decoding: d[4..<(d.count - 1)], as: UTF8.self) }
-        default: break
+        case .volume(let v):
+            if !volumeEchoGuard { volume = v }
+        case .balance(let v):
+            if !balanceEchoGuard { balance = v }
+        case .firmware(let version): firmware = version
+        case .serial(let text): serial = text
         }
     }
 

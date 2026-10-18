@@ -36,6 +36,10 @@ targets:
       - path: OneRemote
         excludes:
           - "*.entitlements"
+    # The scheme also runs the unit tests (Cmd+U)
+    scheme:
+      testTargets:
+        - OneRemoteTests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemote
@@ -54,3 +58,19 @@ targets:
         # macOS only: app sandbox with Bluetooth permission
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": OneRemote/OneRemote-macOS.entitlements
         ENABLE_APP_SANDBOX: YES
+
+  # Unit tests of the pure logic. They compile the logic files directly instead of loading the
+  # app, so they run without launching it (see docs/adr/0018-testing-strategy.md).
+  OneRemoteTests:
+    type: bundle.unit-test
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: OneRemoteTests
+      - path: OneRemote/BLE/AmpProtocol.swift
+      - path: OneRemote/Model/AmpParser.swift
+      - path: OneRemote/Model/VolumeScale.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemoteTests
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES

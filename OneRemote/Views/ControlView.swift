@@ -35,9 +35,9 @@ struct ControlView: View {
     @State private var blinkQuietUntil = Date.distantPast
 
     /// As in the manual (front panel schematic, page 7 of the user instructions): LEDs from bottom left
-    /// (-128 deg) over the top to bottom right (+128 deg), with a gap at the bottom. For the count (21) see `ledUpDB`.
+    /// (-128 deg) over the top to bottom right (+128 deg), with a gap at the bottom. For the count (21) see `VolumeScale`.
     /// The LEDs sit close to the knob edge (radius about 1.08 times).
-    private let volumeLEDs = 21
+    private let volumeLEDs = VolumeScale.ledCount
 
     /// Both knobs have the same size (as on the device); the rest of the area is left for LEDs and labels
     private static let bodyScale = 0.74
@@ -212,29 +212,6 @@ struct ControlView: View {
 
     // MARK: Helpers
 
-    /// Anchor points of the scale in dB: LED k starts at `ledKnotsDB[k]` when turning up (the first one at 0 = -90 dB).
-    /// Values in between are interpolated linearly.
-    private static let ledKnotsDB: [Double] = [
-        -90, -88, -69, -54, -43, -36, -33, -30, -27, -23, -21,
-        -18, -15, -12, -9, -6, -4, -3, -2, -1, 0,
-    ]
-
-    /// Position in LED units (0 to 20) for a dB value
-    private func scalePosition(forDB db: Double) -> Double {
-        let k = Self.ledKnotsDB
-        guard db > k[0] else { return 0 }
-        guard db < k[k.count - 1] else { return Double(k.count - 1) }
-        let i = k.lastIndex(where: { $0 <= db }) ?? 0
-        return Double(i) + (db - k[i]) / (k[i + 1] - k[i])
-    }
-
-    /// dB value for a position in LED units
-    private func scaleDB(forPosition p: Double) -> Double {
-        let k = Self.ledKnotsDB
-        let i = min(k.count - 2, max(0, Int(p.rounded(.down))))
-        return k[i] + (p - Double(i)) * (k[i + 1] - k[i])
-    }
-
     /// Scrolling the volume: the way from LED to LED is always the same length, while the volume value in between
     /// changes in single dB steps. Where the LED steps are far apart (for example -88 to -69),
     /// the way per dB is short, at the last LEDs (-3 to 0) it is long. `degrees` is the finger movement.
@@ -243,12 +220,12 @@ struct ControlView: View {
         let now = Date()
         // The intermediate position remembers fractions of a dB; after a pause it starts again from the device value
         var pos = scrubPos.flatMap { now.timeIntervalSince(scrubTime) < 0.6 ? $0 : nil }
-            ?? scalePosition(forDB: Double(c.volume - AmpBLE.maxHardwareVolume))
-        let top = scalePosition(forDB: Double(c.maxVolume - AmpBLE.maxHardwareVolume))
+            ?? VolumeScale.position(forDB: Double(c.volume - AmpBLE.maxHardwareVolume))
+        let top = VolumeScale.position(forDB: Double(c.maxVolume - AmpBLE.maxHardwareVolume))
         pos = min(top, max(0, pos + degrees / volumeDegreesPerLED))
         scrubPos = pos
         scrubTime = now
-        let db = scaleDB(forPosition: pos).rounded()
+        let db = VolumeScale.db(forPosition: pos).rounded()
         c.setVolume(AmpBLE.maxHardwareVolume + Int(db))
     }
 
@@ -275,28 +252,8 @@ struct ControlView: View {
         inputBlinkOff = false
     }
 
-    /// When turning up: from this dB value on the respective LED lights up (21 LEDs, the first is index 0).
-    /// Measured on the One HD, the scale follows no simple formula. The first LED applies from "-infinity".
-    private static let ledUpDB: [Int] = [
-        -1000, -88, -69, -54, -43, -36, -33, -30, -27, -23, -21,
-        -18, -15, -12, -9, -6, -4, -3, -2, -1, 0,
-    ]
-
-    /// When turning down: at this dB value the display jumps to the respective LED. It stays there
-    /// until the next value (that of the LED below) is reached. So the scale has a hysteresis.
-    private static let ledDownDB: [Int] = [
-        -90, -70, -55, -44, -37, -34, -31, -28, -25, -22, -19,
-        -16, -13, -10, -7, -5, -4, -3, -2, -1, 0,
-    ]
-
-    /// Index of the lit LED. `previous` is the previous index and resolves the cases in which
-    /// turning up and down show different LEDs (hysteresis).
     private func ledIndex(for volume: Int, previous: Int) -> Int {
-        let db = volume - AmpBLE.maxHardwareVolume
-        let up = Self.ledUpDB.lastIndex(where: { $0 <= db }) ?? 0
-        let down = Self.ledDownDB.firstIndex(where: { db <= $0 }) ?? (volumeLEDs - 1)
-        let lo = min(up, down), hi = max(up, down)
-        return min(volumeLEDs - 1, min(max(previous, lo), hi))
+        VolumeScale.ledIndex(forVolume: volume, previous: previous)
     }
 
     private func caption(_ text: LocalizedStringKey) -> some View {
