@@ -40,12 +40,19 @@ targets:
     scheme:
       testTargets:
         - OneRemoteTests
+        # UI tests start the app and take a while: not part of Cmd+U, run them from the test navigator
+        - name: OneRemoteUITests
+          skipped: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemote
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    configs:
+      # The simulated amplifier (UI tests, screenshots) exists in debug builds only
+      Debug:
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG"
         # Name under the icon (iOS) and in the menu bar/window (macOS)
         INFOPLIST_KEY_CFBundleDisplayName: "One Remote"
         PRODUCT_NAME: "One Remote"
@@ -77,3 +84,21 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemoteTests
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: YES
+        # XCTest on macOS needs 14 (the app itself stays on 13)
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+  # UI tests: start the app with a simulated amplifier (see docs/adr/0018-testing-strategy.md)
+  OneRemoteUITests:
+    type: bundle.ui-testing
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: OneRemoteUITests
+    dependencies:
+      - target: OneRemote
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.halfbrodt.OneRemoteUITests
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        # XCTest on macOS needs 14 (the app itself stays on 13)
+        MACOSX_DEPLOYMENT_TARGET: "14.0"

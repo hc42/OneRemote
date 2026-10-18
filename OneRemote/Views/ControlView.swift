@@ -174,7 +174,8 @@ struct ControlView: View {
                 accessibilityText: c.muted ? String(localized: "Muted")
                     : (c.volumeLocked ? String(localized: "Fixed") : AmpBLE.dbText(c.volume)),
                 accessibilityUsage: "Swipe up or down to change the volume. Double tap to mute or unmute.",
-                onAdjust: { c.setVolume(c.volume + $0) }
+                onAdjust: { c.setVolume(c.volume + $0) },
+                accessibilityID: "volumeKnob"
             )
             .frame(width: size, height: size)
             caption("Volume")
@@ -203,7 +204,8 @@ struct ControlView: View {
                 accessibilityName: "Input",
                 accessibilityText: c.input?.title ?? String(localized: "Unknown"),
                 accessibilityUsage: "Swipe up or down to change the input.",
-                onAdjust: { c.stepInput($0) }
+                onAdjust: { c.stepInput($0) },
+                accessibilityID: "inputKnob"
             )
             .frame(width: size, height: size)
             caption("Input")

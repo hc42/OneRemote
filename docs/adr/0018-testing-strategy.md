@@ -20,8 +20,12 @@ Tests are added in layers, cheapest first:
    placeholders match.
 3. `AmpController` tests with a simulated amplifier (`FakeAmplifier.swift`): connecting,
    reconnecting by name, connection loss, retry, rate limits, AV Direct lock.
-4. **Later:** UI tests against a simulated amplifier, which can also create the store
-   screenshots.
+4. **UI tests (XCUITest)** start the app with the launch argument `-simulated-amplifier`
+   (debug builds only). `SimulatedAmplifier` then replaces Bluetooth and answers the same frames
+   as the amplifier, so the tests cover search, connecting, muting and swiping end to end.
+   `-simulated-paired` starts with the amplifier already chosen. The tests attach screenshots,
+   which can serve as store screenshots. They are skipped in Cmd+U because they launch the app;
+   run `OneRemoteUITests` from the test navigator.
 5. **Real hardware** stays a manual check (`docs/TESTING.md`).
 
 Continuous integration is deliberately postponed until the repository is hosted somewhere that

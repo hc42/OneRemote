@@ -51,6 +51,8 @@ struct RotaryKnob: View {
     var accessibilityText = ""
     var accessibilityUsage: LocalizedStringKey = ""
     var onAdjust: (Int) -> Void = { _ in }
+    /// For UI tests
+    var accessibilityID = ""
 
     @State private var rotation = 0.0
     @State private var accumulated = 0.0
@@ -80,6 +82,7 @@ struct RotaryKnob: View {
             .accessibilityLabel(accessibilityName)
             .accessibilityValue(accessibilityText)
             .accessibilityHint(accessibilityUsage)
+            .accessibilityIdentifier(accessibilityID)
             .accessibilityAdjustableAction { direction in
                 guard enabled else { return }
                 switch direction {

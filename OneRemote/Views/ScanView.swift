@@ -25,6 +25,7 @@ struct ScanView: View {
                 }
                 ForEach(c.found) { d in
                     Button(d.name) { c.connect(d.id) }
+                        .accessibilityIdentifier("foundDevice")
                 }
             }
         }
