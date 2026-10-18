@@ -25,6 +25,7 @@ The power switch of the amplifier is purely mechanical and cannot be controlled 
 OneRemote-iOS/
 ├── project.yml                  XcodeGen configuration (generates the .xcodeproj)
 ├── docs/PROTOCOL.md             BLE protocol description
+├── docs/adr/                    Architecture decision records
 └── OneRemote/
     ├── OneRemoteApp.swift       App entry point (@main)
     ├── OneRemote-macOS.entitlements   Sandbox + Bluetooth (macOS only)
@@ -68,3 +69,7 @@ the run destination.
 ## Languages
 
 English is the source and fallback language. German is provided in `OneRemote/Resources/de.lproj` (`Localizable.strings`, `InfoPlist.strings`). To add a language, copy that folder as `<code>.lproj` and translate the values; the keys are the English texts.
+
+## Design decisions
+
+The reasons behind the main design choices are recorded in [`docs/adr/`](docs/adr/README.md).
