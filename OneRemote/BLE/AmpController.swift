@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// Waiting times of the connection handling. Tests use shorter ones.
 struct AmpTiming {

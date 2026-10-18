@@ -67,6 +67,9 @@ targets:
     sources:
       - path: OneRemoteTests
       - path: OneRemote/BLE/AmpProtocol.swift
+      - path: OneRemote/BLE/BLETransport.swift
+      - path: OneRemote/BLE/CoreBluetoothTransport.swift
+      - path: OneRemote/BLE/AmpController.swift
       - path: OneRemote/Model/AmpParser.swift
       - path: OneRemote/Model/VolumeScale.swift
     settings:

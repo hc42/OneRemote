@@ -18,10 +18,11 @@ Tests are added in layers, cheapest first:
 2. **Localization tests** read the source files and `de.lproj/Localizable.strings` and check
    that every user-facing text has a German translation, that no key is stale and that the
    placeholders match.
-3. **Later:** an `AmpController` test with a fake BLE transport (reconnect by name, rate limits,
-   AV Direct lock), then UI tests against a simulated amplifier, which can also create the store
+3. `AmpController` tests with a simulated amplifier (`FakeAmplifier.swift`): connecting,
+   reconnecting by name, connection loss, retry, rate limits, AV Direct lock.
+4. **Later:** UI tests against a simulated amplifier, which can also create the store
    screenshots.
-4. **Real hardware** stays a manual check (`docs/TESTING.md`).
+5. **Real hardware** stays a manual check (`docs/TESTING.md`).
 
 Continuous integration is deliberately postponed until the repository is hosted somewhere that
 offers it; the tests run from Xcode (Cmd+U) or `xcodebuild test`.

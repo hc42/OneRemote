@@ -1,7 +1,8 @@
 # Manual test checklist
 
 Run the automated unit tests first (Cmd+U in Xcode, scheme `OneRemote`); they cover the LED
-scale, the protocol, the response parser and the translations. This list covers what they cannot:
+scale, the protocol, the response parser, the translations and the connection handling
+(against a simulated amplifier). This list covers what they cannot:
 the real amplifier, the gestures and the look. Run it before a release and after changes to `AmpController`, `ControlView`, `RotaryKnob` or the localization. Test on at least
 one iPhone and the Mac; use an iPad if layout code changed.
 
