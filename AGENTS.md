@@ -53,6 +53,13 @@ Read the matching ADR before changing these areas:
 - No Siri, widgets or Control Center controls (tried, too slow with a single connection): 0009.
 - AV Direct toggle only when the state is known, with the confirmation flow: 0010.
 
+## Versions and releases
+
+- Versions live only in `project.yml` (`MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`); the
+  Info.plist refers to them. Never hard-code them elsewhere.
+- Record user-visible changes in `CHANGELOG.md` under "Unreleased" as part of the change.
+- Release steps are in ADR 0017.
+
 ## Documentation
 
 - A decision that is hard to reverse, or that took trying alternatives, gets a new ADR in

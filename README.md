@@ -8,6 +8,7 @@ Documentation:
 - [BLE protocol](docs/PROTOCOL.md)
 - Privacy: [English](docs/PRIVACY.md), [Deutsch](docs/PRIVACY.de.md)
 - [Manual test checklist](docs/TESTING.md)
+- [Changelog](CHANGELOG.md)
 - [Architecture decision records](docs/adr/README.md): why the app is built the way it is
 - [Notes for AI agents and contributors](AGENTS.md)
 
@@ -33,7 +34,8 @@ The power switch of the amplifier is purely mechanical and cannot be controlled 
 
 ```
 OneRemote/
-├── project.yml                  XcodeGen configuration (generates the .xcodeproj)
+├── project.yml                  XcodeGen configuration (generates the .xcodeproj), versions
+├── CHANGELOG.md                 Notable changes per release
 ├── docs/USAGE.md                Using the app, troubleshooting
 ├── docs/TESTING.md              Manual test checklist
 ├── docs/PROTOCOL.md             BLE protocol description

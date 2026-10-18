@@ -13,7 +13,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1"
+    # Single source of truth for versions, see docs/adr/0017-versioning-and-releases.md
+    MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
 
 targets:
@@ -26,6 +27,8 @@ targets:
     info:
       path: Config/Info.plist
       properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen:
           UIColorName: LaunchBackground
           UIImageName: LaunchLogo
