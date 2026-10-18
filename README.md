@@ -8,6 +8,7 @@ Documentation:
 - [BLE protocol](docs/PROTOCOL.md)
 - Privacy: [English](docs/PRIVACY.md), [Deutsch](docs/PRIVACY.de.md)
 - [Manual test checklist](docs/TESTING.md)
+- [App Store listing texts](docs/STORE.md)
 - [Changelog](CHANGELOG.md)
 - [Architecture decision records](docs/adr/README.md): why the app is built the way it is
 - [Notes for AI agents and contributors](AGENTS.md)
@@ -41,6 +42,7 @@ OneRemote/
 ├── docs/TESTING.md              Manual test checklist
 ├── docs/PROTOCOL.md             BLE protocol description
 ├── docs/PRIVACY.md, PRIVACY.de.md  Privacy policy
+├── docs/STORE.md                App Store texts (English, German) and review notes
 ├── docs/adr/                    Architecture decision records (see docs/adr/README.md)
 └── OneRemote/
     ├── OneRemoteApp.swift       App entry point (@main)
