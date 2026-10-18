@@ -1,7 +1,12 @@
 # One Remote (iOS / macOS)
 
 Native SwiftUI app that remotely controls an ONE / ONE HD amplifier over Bluetooth Low Energy.
-The BLE protocol is described in `docs/PROTOCOL.md`.
+
+Documentation:
+
+- [BLE protocol](docs/PROTOCOL.md)
+- [Architecture decision records](docs/adr/README.md): why the app is built the way it is
+- [Notes for AI agents and contributors](AGENTS.md)
 
 ## Features
 
@@ -14,6 +19,8 @@ The BLE protocol is described in `docs/PROTOCOL.md`.
 - The LED of a newly selected input blinks briefly.
 - Automatic reconnect after the amplifier was switched off and on again. The amplifier may show up
   with a new identifier, so it is recognized by its name as well.
+- Keyboard shortcuts (arrow keys, space for mute), mouse wheel on the Mac and VoiceOver support.
+- English and German user interface.
 - Settings: device selection, balance, display brightness, volume limit, sensitivity,
   AV Direct (with two-step confirmation) and device info.
 
@@ -22,10 +29,10 @@ The power switch of the amplifier is purely mechanical and cannot be controlled 
 ## Structure
 
 ```
-OneRemote-iOS/
+OneRemote/
 ├── project.yml                  XcodeGen configuration (generates the .xcodeproj)
 ├── docs/PROTOCOL.md             BLE protocol description
-├── docs/adr/                    Architecture decision records
+├── docs/adr/                    Architecture decision records (see docs/adr/README.md)
 └── OneRemote/
     ├── OneRemoteApp.swift       App entry point (@main)
     ├── OneRemote-macOS.entitlements   Sandbox + Bluetooth (macOS only)
@@ -48,7 +55,7 @@ OneRemote-iOS/
 
 ```
 brew install xcodegen
-cd OneRemote-iOS
+cd OneRemote
 xcodegen generate
 open OneRemote.xcodeproj
 ```
@@ -72,4 +79,6 @@ English is the source and fallback language. German is provided in `OneRemote/Re
 
 ## Design decisions
 
-The reasons behind the main design choices are recorded in [`docs/adr/`](docs/adr/README.md).
+The reasons behind the main design choices, including options that were tried and dropped, are
+recorded as architecture decision records in [`docs/adr/`](docs/adr/README.md). Add a record when
+you make a decision of that kind.
