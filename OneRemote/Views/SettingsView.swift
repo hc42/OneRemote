@@ -169,6 +169,9 @@ struct SettingsView: View {
                 Link(destination: URL(string: "https://github.com/hc42/OneRemote/blob/main/docs/PRIVACY.md")!) {
                     Text("Privacy policy")
                 }
+                Link(destination: URL(string: "https://github.com/hc42/OneRemote")!) {
+                    Text("Source code")
+                }
                 Link("oneremote-hc@halfbrodt.org", destination: URL(string: "mailto:oneremote-hc@halfbrodt.org")!)
             }
             .font(.footnote)
