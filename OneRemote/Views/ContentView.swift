@@ -53,6 +53,7 @@ struct ContentView: View {
 
     private var title: String {
         if c.showScan { return String(localized: "Choose device") }
+        if c.isDemo { return String(localized: "Demo") }
         return c.connected ? c.deviceName : "One Remote"
     }
 }

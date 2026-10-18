@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct OneRemoteApp: App {
-    @StateObject private var controller = OneRemoteApp.makeController()
+    @StateObject private var model = AppModel(real: OneRemoteApp.makeController())
 
     private static func makeController() -> AmpController {
         #if DEBUG
@@ -17,7 +17,8 @@ struct OneRemoteApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(controller)
+                .environmentObject(model.controller)
+                .environmentObject(model)
                 #if os(macOS)
                 .frame(minWidth: 420, minHeight: 640)
                 #endif

@@ -24,5 +24,6 @@ it and the old one is marked "Superseded by".
 | [0016](0016-privacy-by-design.md) | Privacy by design: local only, no network | Accepted |
 | [0017](0017-versioning-and-releases.md) | Versioning, changelog and release steps | Accepted |
 | [0018](0018-testing-strategy.md) | Testing strategy | Accepted |
+| [0019](0019-demo-mode.md) | Demo mode with a simulated amplifier | Accepted |
 
 New record: copy the newest file, increase the number, add it to this table.

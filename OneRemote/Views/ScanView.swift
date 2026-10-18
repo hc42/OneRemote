@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ScanView: View {
     @EnvironmentObject var c: AmpController
+    @EnvironmentObject var app: AppModel
 
     var body: some View {
         List {
@@ -27,6 +28,13 @@ struct ScanView: View {
                     Button(d.name) { c.connect(d.id) }
                         .accessibilityIdentifier("foundDevice")
                 }
+            }
+            // For everyone without the amplifier (and for App Review)
+            Section {
+                Button("Try the demo") { app.startDemo() }
+                    .accessibilityIdentifier("demoButton")
+            } footer: {
+                Text("Shows a simulated amplifier. Nothing is sent over Bluetooth.")
             }
         }
         .toolbar {

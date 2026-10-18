@@ -4,6 +4,7 @@ import SwiftUI
 /// AV Direct and device info.
 struct SettingsView: View {
     @EnvironmentObject var c: AmpController
+    @EnvironmentObject var app: AppModel
     @Environment(\.dismiss) private var dismiss
     @AppStorage("knobSensitivity2") private var sensitivity = 0.5
 
@@ -34,12 +35,24 @@ struct SettingsView: View {
                 Text(c.status)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                Button("Search for another device") {
-                    // Close the settings first, otherwise they stay on top of the search
-                    dismiss()
-                    c.openScan()
+                if c.isDemo {
+                    Text("Demo mode: this is a simulated amplifier.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Button("Exit demo") {
+                        dismiss()
+                        app.exitDemo()
+                    }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("exitDemoButton")
+                } else {
+                    Button("Search for another device") {
+                        // Close the settings first, otherwise they stay on top of the search
+                        dismiss()
+                        c.openScan()
+                    }
+                        .buttonStyle(.bordered)
                 }
-                    .buttonStyle(.bordered)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

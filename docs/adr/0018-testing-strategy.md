@@ -21,7 +21,7 @@ Tests are added in layers, cheapest first:
 3. `AmpController` tests with a simulated amplifier (`FakeAmplifier.swift`): connecting,
    reconnecting by name, connection loss, retry, rate limits, AV Direct lock.
 4. **UI tests (XCUITest)** start the app with the launch argument `-simulated-amplifier YES`
-   (debug builds only). `SimulatedAmplifier` then replaces Bluetooth and answers the same frames
+   (debug builds only; the demo mode of ADR 0019 is the same simulator in every build). `SimulatedAmplifier` then replaces Bluetooth and answers the same frames
    as the amplifier, so the tests cover search, connecting, muting and swiping end to end.
    `-simulated-paired YES` starts with the amplifier already chosen. The tests attach screenshots,
    and the separate test plan `Screenshots` (`scripts/screenshots.sh`) produces the store screenshots. They are not part of the default Cmd+U because they

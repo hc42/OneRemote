@@ -1,9 +1,10 @@
-#if DEBUG
 import Foundation
 
-/// A simulated amplifier instead of Bluetooth, for the UI tests and for store screenshots.
-/// Only compiled into debug builds and only used with the launch argument `-simulated-amplifier YES`
-/// (plus `-simulated-paired YES` to start with the amplifier already chosen).
+/// A simulated amplifier instead of Bluetooth. It serves two purposes:
+/// - Demo mode (all builds): "Try the demo" in the device search, so that App Review and anyone
+///   without the hardware can try the app. Nothing is sent over Bluetooth or the network.
+/// - UI tests and store screenshots (debug builds): launch argument `-simulated-amplifier YES`
+///   (plus `-simulated-paired YES` to start with the amplifier already chosen).
 /// Write the options as `-key YES`: a lone argument would be treated as a file to open on the Mac.
 /// It answers the same frames as the real amplifier (see docs/PROTOCOL.md).
 final class SimulatedAmplifier: BLETransport {
@@ -46,6 +47,17 @@ final class SimulatedAmplifier: BLETransport {
             defaults.set(deviceName, forKey: "lastDeviceName")
         }
         return AmpController(transport: SimulatedAmplifier(), defaults: defaults)
+    }
+
+    /// Controller for the demo mode: starts already connected to the simulated amplifier.
+    /// Uses its own settings, so the saved real device and the volume limit stay untouched.
+    static func makeDemoController() -> AmpController {
+        let suite = "OneRemote-Demo"
+        let defaults = UserDefaults(suiteName: suite) ?? .standard
+        defaults.removePersistentDomain(forName: suite)
+        defaults.set(deviceID.uuidString, forKey: "lastDeviceID")
+        defaults.set(deviceName, forKey: "lastDeviceName")
+        return AmpController(transport: SimulatedAmplifier(), defaults: defaults, isDemo: true)
     }
 
     // MARK: BLETransport
@@ -138,4 +150,3 @@ final class SimulatedAmplifier: BLETransport {
         func write(_ data: Data, withResponse: Bool) { owner?.receive(data) }
     }
 }
-#endif

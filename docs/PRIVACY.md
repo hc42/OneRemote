@@ -16,6 +16,10 @@ It does not collect, transmit or share any data.
 The stored values live in the app's own local settings storage (`UserDefaults`). They are
 removed when you delete the app.
 
+Demo mode ("Try the demo" in the device search) shows a simulated amplifier inside the app. It uses
+no Bluetooth and no network, reads and stores nothing about you, and its values are forgotten when you
+leave it.
+
 ## What the app does not do
 
 - No network access: the app contains no networking code and, on the Mac, has no network

@@ -116,6 +116,21 @@ final class OneRemoteUITests: XCTestCase {
         waitFor(knob("volumeKnob"), "volume knob")
     }
 
+    func testDemoModeIsReachableFromTheSearchAndCanBeLeft() throws {
+        try skipOnMac()
+        launch(paired: false)
+        let demo = app.buttons["demoButton"]
+        waitFor(demo, "the demo button in the device search")
+        demo.tap()
+        waitFor(knob("volumeKnob"), "volume knob in demo mode")
+
+        app.buttons["Settings"].firstMatch.tap()
+        let exit = app.buttons["exitDemoButton"]
+        waitFor(exit, "the exit demo button in the settings")
+        exit.tap()
+        waitFor(app.buttons["demoButton"], "the device search after leaving the demo")
+    }
+
     func testSettingsOpenFromTheControls() throws {
         try skipOnMac()
         launch(paired: true)

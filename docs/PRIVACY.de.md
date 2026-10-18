@@ -16,6 +16,10 @@ Verstärker. Die App erhebt, überträgt und teilt keine Daten.
 Die gespeicherten Werte liegen im lokalen Einstellungsspeicher der App (`UserDefaults`). Sie
 werden beim Löschen der App entfernt.
 
+Der Demo-Modus („Demo ausprobieren“ in der Gerätesuche) zeigt einen simulierten Verstärker innerhalb der App.
+Er nutzt weder Bluetooth noch das Netzwerk, liest und speichert nichts über dich, und seine Werte werden beim
+Beenden verworfen.
+
 ## Was die App nicht tut
 
 - Kein Netzwerkzugriff: Die App enthält keinen Netzwerkcode und hat auf dem Mac keine

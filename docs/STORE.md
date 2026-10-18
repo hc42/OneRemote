@@ -93,5 +93,9 @@ The reviewers do not own the amplifier. Without a way to try the app, it is reje
 1. A demo mode inside the app that is visible to everyone (preferred), described in the review notes.
 2. A screen recording that shows connecting, volume, input and reconnecting with the real amplifier.
 
-The simulated amplifier used by the UI tests exists in debug builds only; for review it would have to be reachable
-from a release build.
+Implemented (ADR 0019): the device search ends with **Try the demo**, which controls a simulated amplifier in every
+build. Put this in the App Review notes:
+
+> The app controls a Bluetooth amplifier that reviewers do not have. Open the app, scroll to the end of the device
+> search and tap "Try the demo": it shows all controls (volume, input, balance, settings) with a simulated amplifier.
+> The demo uses no Bluetooth and no network. "Exit demo" in the settings returns to the search.

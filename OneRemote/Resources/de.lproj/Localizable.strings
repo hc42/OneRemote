@@ -83,3 +83,7 @@
 "Unknown" = "Unbekannt";
 "Swipe up or down to change the volume. Double tap to mute or unmute." = "Zum Ändern der Lautstärke nach oben oder unten wischen. Doppeltippen zum Stummschalten oder Aufheben.";
 "Swipe up or down to change the input." = "Zum Ändern des Eingangs nach oben oder unten wischen.";
+"Try the demo" = "Demo ausprobieren";
+"Shows a simulated amplifier. Nothing is sent over Bluetooth." = "Zeigt einen simulierten Verstärker. Es wird nichts per Bluetooth gesendet.";
+"Demo mode: this is a simulated amplifier." = "Demo-Modus: Dies ist ein simulierter Verstärker.";
+"Exit demo" = "Demo beenden";

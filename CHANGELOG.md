@@ -9,6 +9,8 @@ All notable changes to this project are documented here. The format follows
 First release will be 0.1.0.
 
 ### Added
+- Demo mode: "Try the demo" in the device search controls a simulated amplifier without Bluetooth
+  or network, so the app can be tried (and reviewed) without the hardware.
 - Two endless rotary controls for input and volume with the LED scale of the amplifier,
   including its hysteresis; volume in single dB steps with a sensitivity setting.
 - Control by turning, swiping around the knob, tapping an input LED or label, keyboard

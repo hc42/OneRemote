@@ -56,6 +56,8 @@ final class AmpController: NSObject, ObservableObject {
     }
     @Published var log: [String] = []
 
+    /// Demo mode: the amplifier is simulated, no Bluetooth is used
+    let isDemo: Bool
     private let transport: BLETransport
     private let defaults: UserDefaults
     private let timing: AmpTiming
@@ -98,7 +100,9 @@ final class AmpController: NSObject, ObservableObject {
 
     init(transport: BLETransport = CoreBluetoothTransport(),
          defaults: UserDefaults = .standard,
-         timing: AmpTiming = .standard) {
+         timing: AmpTiming = .standard,
+         isDemo: Bool = false) {
+        self.isDemo = isDemo
         self.transport = transport
         self.defaults = defaults
         self.timing = timing

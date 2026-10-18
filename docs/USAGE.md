@@ -9,6 +9,10 @@
 4. Choose your amplifier in the list "Devices found" (the name starts with `ONE`). A
    pairing dialog may appear the first time; if the connection fails afterwards, connect again.
 
+No amplifier at hand? Choose **Try the demo** at the bottom of the device search. The app then
+controls a simulated amplifier (no Bluetooth, no network, nothing is stored). Leave it with
+**Exit demo** in the settings.
+
 The app remembers the device and connects to it automatically from now on, also after the
 amplifier was switched off and on again.
 
@@ -52,7 +56,7 @@ volume knob to mute.
 
 | Section | What it does |
 |---|---|
-| Device | Shows the connected amplifier and its status. "Search for another device" opens the search. |
+| Device | Shows the connected amplifier and its status. "Search for another device" opens the search. In demo mode: "Exit demo". |
 | Balance | Left/right balance, "Center" resets it. Disabled while headphones are connected. |
 | Display brightness | Dimmer / brighter for the amplifier's display; hold the button to repeat. |
 | Volume limit | The knobs and keys do not go above this value (default -30 dB). It is stored. |

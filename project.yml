@@ -52,7 +52,8 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     configs:
-      # The simulated amplifier (UI tests, screenshots) exists in debug builds only
+      # The launch arguments of the simulated amplifier (UI tests, screenshots) work in debug builds only;
+      # demo mode (SimulatedAmplifier) is in every build
       Debug:
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG"
         # Name under the icon (iOS) and in the menu bar/window (macOS)
