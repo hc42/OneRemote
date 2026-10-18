@@ -7,7 +7,7 @@ Documentation:
 - [Using the app and troubleshooting](docs/USAGE.md)
 - [BLE protocol](docs/PROTOCOL.md)
 - Privacy: [English](docs/PRIVACY.md), [Deutsch](docs/PRIVACY.de.md)
-- [Manual test checklist](docs/TESTING.md)
+- [Testing: automated tests and manual checklist](docs/TESTING.md)
 - [App Store listing texts](docs/STORE.md)
 - [Changelog](CHANGELOG.md)
 - [Architecture decision records](docs/adr/README.md): why the app is built the way it is
@@ -27,7 +27,10 @@ Documentation:
 - Keyboard shortcuts (arrow keys, space for mute), mouse wheel on the Mac and VoiceOver support.
 - English and German user interface.
 - Settings: device selection, balance, display brightness, volume limit, sensitivity,
-  AV Direct (with two-step confirmation) and device info.
+  AV Direct (with two-step confirmation), device info and an About section (version, license,
+  privacy policy, source code).
+- Demo mode ("Try the demo" in the device search): a simulated amplifier, for trying the app
+  without the hardware.
 
 The power switch of the amplifier is purely mechanical and cannot be controlled by the app.
 
@@ -36,10 +39,14 @@ The power switch of the amplifier is purely mechanical and cannot be controlled 
 ```
 OneRemote/
 ├── project.yml                  XcodeGen configuration (generates the .xcodeproj), versions
+├── Config/                      Info.plist, signing settings (Local.xcconfig is not tracked)
 ├── CHANGELOG.md                 Notable changes per release
-├── OneRemoteTests/              Unit tests (LED scale, protocol, parser, translations)
+├── scripts/                     test.sh (all tests), screenshots.sh (App Store screenshots)
+├── TestPlans/                   Xcode test plans: Unit, UI, All, Screenshots
+├── OneRemoteTests/              Unit tests (LED scale, protocol, parser, translations, connection handling)
+├── OneRemoteUITests/            UI tests and screenshot tests against the simulated amplifier
 ├── docs/USAGE.md                Using the app, troubleshooting
-├── docs/TESTING.md              Manual test checklist
+├── docs/TESTING.md              Automated tests and manual checklist
 ├── docs/PROTOCOL.md             BLE protocol description
 ├── docs/PRIVACY.md, PRIVACY.de.md  Privacy policy
 ├── docs/STORE.md                App Store texts (English, German) and review notes
@@ -49,16 +56,25 @@ OneRemote/
     ├── OneRemote-macOS.entitlements   Sandbox + Bluetooth (macOS only)
     ├── Assets.xcassets          App icon, logo, launch screen images
     ├── PrivacyInfo.xcprivacy    Privacy manifest (no tracking, no data collected)
+    ├── Resources/de.lproj/      German translations
+    ├── Model/
+    │   ├── AppModel.swift       Holds the active controller (real amplifier or demo)
+    │   ├── AmpParser.swift      Decodes the amplifier's responses
+    │   └── VolumeScale.swift    LED scale, dB mapping
     ├── BLE/
     │   ├── AmpProtocol.swift    UUIDs, commands, frame format, inputs
-    │   └── AmpController.swift  CoreBluetooth: scan, connect, send, parse, reconnect
+    │   ├── AmpController.swift  Connection logic: scan, connect, send, reconnect
+    │   ├── BLETransport.swift   Protocols that separate the logic from CoreBluetooth
+    │   ├── CoreBluetoothTransport.swift  The CoreBluetooth implementation
+    │   └── SimulatedAmplifier.swift      Simulated amplifier: demo mode, UI tests, screenshots
     └── Views/
         ├── ContentView.swift    Switches between search / connection / controls, splash image
         ├── ConnectionView.swift Connection setup, errors, switch to the search
-        ├── ScanView.swift       Device search
+        ├── ScanView.swift       Device search, demo entry
         ├── ControlView.swift    Main page: volume and input knobs, LED scale
         ├── RotaryKnob.swift     Endless rotary knob with LED ring, input symbols, swipe gesture
-        ├── SettingsView.swift   Settings
+        ├── ScrollWheel.swift    Mouse wheel on the Mac
+        ├── SettingsView.swift   Settings and About
         ├── HoldRepeatButtonStyle.swift  Buttons that repeat while held
         └── AVDirectView.swift   AV Direct with two-step confirmation
 ```

@@ -1,4 +1,4 @@
-# Manual test checklist
+# Testing: automated tests and manual checklist
 
 Run the automated tests first. They are grouped in test plans (`TestPlans/`): **Unit** (default for
 Cmd+U; LED scale, protocol, parser, translations and the connection handling against a simulated
@@ -41,6 +41,12 @@ Preparation: no other controller connected, volume limit at the default, headpho
 - [ ] Balance: slider and "Center" work; greyed out with headphones connected.
 - [ ] Display brightness buttons repeat while held.
 - [ ] Device info shows serial number, firmware, DAC model; "Refresh values" updates them.
+
+## Demo and About
+
+- [ ] "Try the demo" at the end of the device search opens the controls with the title "Demo"; volume, input and balance work.
+- [ ] "Exit demo" in the settings returns to the search; the real amplifier's saved device and volume limit are unchanged.
+- [ ] The About section shows version and build; the privacy policy and source code links open the browser; the mail link opens a message.
 
 ## AV Direct
 
