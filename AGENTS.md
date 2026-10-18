@@ -11,7 +11,8 @@ protocol and `docs/adr/` for the reasons behind the design.
 ## Build
 
 - The Xcode project is generated and not committed. After adding, removing or renaming files,
-  or changing `project.yml`, run `xcodegen generate`.
+  or changing `project.yml`, run `xcodegen generate`. The signing team ID lives in `Config/Local.xcconfig`
+  (not tracked); never put it into `project.yml`.
 - One target for iOS 16+ and macOS 13+. Anything newer needs an availability check or a
   different approach (for example no `onKeyPress`, see ADR 0013).
 - Platform-specific code goes in `#if os(iOS)`, `#if os(macOS)` or `#if canImport(UIKit)`.

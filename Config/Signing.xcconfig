@@ -1,0 +1,3 @@
+// Signing settings shared by all targets.
+// Your own team goes into Config/Local.xcconfig (not tracked by git), see Config/Local.xcconfig.example.
+#include? "Local.xcconfig"

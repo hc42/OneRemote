@@ -72,8 +72,9 @@ xcodegen generate
 open OneRemote.xcodeproj
 ```
 
-Then pick your own team under Signing & Capabilities and choose "My Mac" or a connected iPhone as
-the run destination.
+To sign with your own Apple developer team, copy `Config/Local.xcconfig.example` to
+`Config/Local.xcconfig` (ignored by git), enter your team ID and run `xcodegen generate` again.
+Then choose "My Mac" or a connected iPhone as the run destination.
 
 ## Notes
 
