@@ -46,8 +46,12 @@ protocol and `docs/adr/` for the reasons behind the design.
 ## Architecture in short
 
 - `BLE/AmpProtocol.swift`: UUIDs, command frames, inputs, value conversions.
-- `BLE/AmpController.swift`: the only owner of the CoreBluetooth connection and the app state
-  (`ObservableObject`); scan, connect, reconnect by name, send, parse.
+- `BLE/AmpController.swift`: owner of the connection logic and the app state (`ObservableObject`);
+  scan, connect, reconnect by name, send, parse. It talks to Bluetooth only through the
+  `BLETransport` protocols (`BLE/BLETransport.swift`); `CoreBluetoothTransport` is the real
+  implementation, `SimulatedAmplifier` the simulated one (demo mode, UI tests, screenshots) and the unit
+  tests use a fake.
+- `Model/AppModel.swift`: holds the controller the views use, the real one or the demo one.
 - `Views/`: SwiftUI views read the controller state and call its methods. `ControlView` is
   the main page, `RotaryKnob` the reusable knob.
 
@@ -69,10 +73,26 @@ Read the matching ADR before changing these areas:
 
 ## Documentation
 
-- A decision that is hard to reverse, or that took trying alternatives, gets a new ADR in
-  `docs/adr/` (copy the newest file, next number, add it to the table in `docs/adr/README.md`).
-  ADRs must be standalone: no references to chats, tickets or people.
-- Protocol facts go in `docs/PROTOCOL.md`; mark what is confirmed on real hardware.
+Documentation is part of every change, not a follow-up. Update it in the same commit (or the same
+series of commits) as the code, before reporting the work as done:
+
+| If you change... | update |
+|---|---|
+| Features, files, folders, scripts, build steps | `README.md` (features, structure, build) and this file if the rules change |
+| What the user sees or does | `docs/USAGE.md`, `docs/TESTING.md` (manual checklist), `CHANGELOG.md` ("Unreleased"), German strings |
+| Stored data, permissions, network, anything privacy related | `docs/PRIVACY.md` and `docs/PRIVACY.de.md` (both), `OneRemote/PrivacyInfo.xcprivacy`, a new ADR |
+| BLE commands or responses | `docs/PROTOCOL.md` (mark what is confirmed on real hardware) |
+| Tests, test plans, scripts | `docs/TESTING.md`, ADR 0018 |
+| Store texts, screenshots, review notes, URLs | `docs/STORE.md` |
+| A hard-to-reverse decision, or one that took trying alternatives | a new ADR in `docs/adr/` (copy the newest file, next number, add it to the table in `docs/adr/README.md`); change a superseded ADR's status instead of rewriting history |
+| Security-relevant behavior, reporting or scanning | `SECURITY.md` |
+
+- ADRs must be standalone: no references to chats, tickets or people.
+- Docs are English, except the German privacy policy and the German store texts. Keep both language
+  versions in step.
+- Read the touched docs again before finishing: stale statements (old file names, removed options,
+  counts that no longer match) are bugs. Search for the names you changed.
+- Run `scripts/test.sh`; the localization tests also check the strings.
 
 ## Git
 
