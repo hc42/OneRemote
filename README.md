@@ -10,6 +10,7 @@ Documentation:
 - [Testing: automated tests and manual checklist](docs/TESTING.md)
 - [App Store listing texts](docs/STORE.md)
 - [Changelog](CHANGELOG.md)
+- [Security policy](SECURITY.md)
 - [Architecture decision records](docs/adr/README.md): why the app is built the way it is
 - [Notes for AI agents and contributors](AGENTS.md)
 
@@ -42,6 +43,7 @@ OneRemote/
 ├── .github/                     Dependabot configuration, CodeQL workflow
 ├── Config/                      Info.plist, signing settings (Local.xcconfig is not tracked)
 ├── CHANGELOG.md                 Notable changes per release
+├── SECURITY.md                  How to report a vulnerability
 ├── scripts/                     test.sh (all tests), screenshots.sh (App Store screenshots)
 ├── TestPlans/                   Xcode test plans: Unit, UI, All, Screenshots
 ├── OneRemoteTests/              Unit tests (LED scale, protocol, parser, translations, connection handling)
