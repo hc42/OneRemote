@@ -1,0 +1,24 @@
+# Dependabot version updates, see
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# The app has no third-party dependencies (docs/adr/0016-privacy-by-design.md). The only thing to keep
+# current is the GitHub Actions used by workflows in .github/workflows/ (none yet; until the first one
+# exists, Dependabot reports "no files found" for this entry, which is harmless).
+#
+# If Swift packages are ever added, they are declared in project.yml, which Dependabot does not read.
+# Then add a Package.swift/Package.resolved based setup and an entry with `package-ecosystem: "swift"`.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Berlin"
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
+    labels: ["dependencies"]

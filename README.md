@@ -39,6 +39,7 @@ The power switch of the amplifier is purely mechanical and cannot be controlled 
 ```
 OneRemote/
 ├── project.yml                  XcodeGen configuration (generates the .xcodeproj), versions
+├── .github/dependabot.yml       Dependabot configuration (GitHub Actions updates)
 ├── Config/                      Info.plist, signing settings (Local.xcconfig is not tracked)
 ├── CHANGELOG.md                 Notable changes per release
 ├── scripts/                     test.sh (all tests), screenshots.sh (App Store screenshots)
