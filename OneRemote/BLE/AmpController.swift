@@ -355,6 +355,7 @@ final class AmpController: NSObject, ObservableObject {
         connecting = false
         if !scanning { transport.stopScan() }
         if let p = peripheral { transport.cancelConnection(p) }
+        peripheral = nil
     }
 
     /// With AV Direct on the AV input the volume is fixed on the amplifier
@@ -599,8 +600,11 @@ extension AmpController: BLETransportDelegate {
             autoTarget = nil
             transport.stopScan()
             peripherals[link.id] = link
-            // End a still-open request to another (stale) peripheral
-            if let old = peripheral, old.id != link.id {
+            if let old = peripheral {
+                // The open request is for this very device: it completes by itself, a second one would only
+                // restart the time limit
+                if old.id == link.id { return }
+                // End a still-open request to another (stale) peripheral
                 transport.cancelConnection(old)
             }
             beginConnect(link, name: target?.name ?? link.name ?? "ONE")
