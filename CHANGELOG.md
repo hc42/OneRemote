@@ -9,6 +9,7 @@ All notable changes to this project are documented here. The format follows
 First release will be 0.1.0.
 
 ### Added
+- Mac: a single window; closing it quits the app and releases the amplifier for other controllers.
 - About section in the settings: version, license, privacy summary, links to the privacy policy and the source code, contact.
 - Demo mode: "Try the demo" in the device search controls a simulated amplifier without Bluetooth
   or network, so the app can be tried (and reviewed) without the hardware.

@@ -22,6 +22,9 @@ Two large knobs, modeled on the front panel: **Input** and **Volume**. They sit 
 wide screens and one above the other on narrow ones. The gear icon at the top right opens the
 settings.
 
+On the Mac the app has a single window. Closing it quits the app and releases the amplifier for
+other controllers.
+
 ### Volume
 
 - **Turn** the knob along its edge, or **swipe** straight in the area around it (right or up =

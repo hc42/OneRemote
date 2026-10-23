@@ -65,6 +65,7 @@ Preparation: no other controller connected, volume limit at the default, headpho
 ## Mac
 
 - [ ] Window opens, Bluetooth permission works with the sandbox.
+- [ ] File menu has no "New Window"; closing the window quits the app and another controller can connect right after.
 - [ ] Arrow keys and space work; the mouse wheel changes volume and input over their areas.
 - [ ] No iOS-only UI artifacts (navigation bar title, haptics).
 
