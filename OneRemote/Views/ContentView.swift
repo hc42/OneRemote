@@ -38,12 +38,8 @@ struct ContentView: View {
         // because the device may have been turned in the meantime
         .onChange(of: scenePhase) { phase in
             guard phase == .active else { return }
-            if c.connected {
-                c.refresh()
-            } else if !c.connecting, !c.showScan {
-                // When returning to the app, connect again in case the amplifier is back by now
-                c.retry()
-            }
+            // Checks that the link still works, or connects again in case the amplifier is back by now
+            c.appBecameActive()
         }
         .task {
             try? await Task.sleep(nanoseconds: 1_200_000_000)

@@ -14,7 +14,7 @@ stay the same.
   scan runs in parallel and matches by identifier or advertised name.
 - When the connection is ready, save the (possibly new) identifier.
 - Failures and connection loss schedule automatic retries; coming to the foreground
-  triggers a refresh when connected or an immediate retry when not.
+  checks that the link still works (see ADR 0020) or retries at once when not connected.
 - Selecting another device is a separate screen; the settings screen is dismissed first
   so the search is visible at once.
 

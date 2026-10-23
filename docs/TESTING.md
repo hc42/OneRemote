@@ -19,6 +19,7 @@ Preparation: no other controller connected, volume limit at the default, headpho
 - [ ] Amplifier off while the app is open: connection screen with status text; "Try again" works once it is on.
 - [ ] Bluetooth switched off in the system: status text, no crash; reconnects when switched on again.
 - [ ] Lock and unlock the phone or return from the background: values refresh.
+- [ ] Leave the app in the background overnight with the amplifier switched off, switch the amplifier on in the morning and open the app: it reconnects within a few seconds and shows the values (no empty knobs).
 - [ ] "Search for another device" from Settings opens the search at once.
 
 ## Volume

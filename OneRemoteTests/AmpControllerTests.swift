@@ -19,15 +19,23 @@ final class AmpControllerTests: XCTestCase {
 
     // MARK: Helpers
 
-    private let fast = AmpTiming(connectTimeout: 0.3, retryDelay: 0.1)
+    /// The check for a dead link (probeTimeout) is practically off, so it does not interfere with other tests
+    private let fast = AmpTiming(connectTimeout: 0.3, retryDelay: 0.1, probeTimeout: 30)
+    /// For the tests of the check for a dead link
+    private let probing = AmpTiming(connectTimeout: 5, retryDelay: 0.1, probeTimeout: 0.1, restartDelay: 0.05)
 
     private func saveDevice(id: UUID, name: String = "ONE 1234") {
         defaults.set(id.uuidString, forKey: "lastDeviceID")
         defaults.set(name, forKey: "lastDeviceName")
     }
 
-    private func makeController(_ transport: FakeTransport) -> AmpController {
-        AmpController(transport: transport, defaults: defaults, timing: fast)
+    private func makeController(_ transport: FakeTransport, timing: AmpTiming? = nil) -> AmpController {
+        AmpController(transport: transport, defaults: defaults, timing: timing ?? fast)
+    }
+
+    /// Any frame from the amplifier (the real one answers every request)
+    private func answerFrame() -> Data {
+        AmpBLE.frame(AmpBLE.valueBody(AmpBLE.Cmd.volume, value: 40))
     }
 
     /// Runs the main run loop until the condition holds (or fails the test after the timeout)
@@ -233,6 +241,62 @@ final class AmpControllerTests: XCTestCase {
         XCTAssertTrue(controller.avDirectKnown)
         transport.disappear()
         XCTAssertFalse(controller.avDirectKnown)
+    }
+
+    // MARK: Dead links (app was in the background for a long time)
+
+    func testALinkThatDoesNotAnswerAfterComingToTheFrontIsDroppedAndReopened() {
+        let amp = FakeLink()
+        let transport = FakeTransport(amp: amp)
+        transport.reportsCancelledLinks = true
+        transport.knownLinks[amp.id] = amp
+        saveDevice(id: amp.id)
+        let controller = makeController(transport, timing: probing)
+        transport.powerOn()
+        wait("connected") { controller.connected }
+        transport.deliver(answerFrame()) // the first answer arrives, the link is fine
+        pause(0.3)
+        XCTAssertEqual(transport.connectCount, 1)
+
+        // Hours later: the system dropped the link without the app noticing, nothing answers any more
+        controller.appBecameActive()
+        wait("the dead link is dropped and a new connection is opened") { transport.connectCount >= 2 }
+        XCTAssertGreaterThanOrEqual(transport.cancelCount, 1)
+    }
+
+    func testALinkThatAnswersStaysOpenWhenTheAppComesToTheFront() {
+        let amp = FakeLink()
+        let transport = FakeTransport(amp: amp)
+        transport.reportsCancelledLinks = true
+        transport.knownLinks[amp.id] = amp
+        saveDevice(id: amp.id)
+        let controller = makeController(transport, timing: probing)
+        transport.powerOn()
+        wait("connected") { controller.connected }
+        transport.deliver(answerFrame())
+
+        let writesBefore = amp.writes.count
+        controller.appBecameActive()
+        pause(0.03)
+        transport.deliver(answerFrame())
+        pause(0.5)
+        XCTAssertTrue(controller.connected)
+        XCTAssertEqual(transport.connectCount, 1)
+        XCTAssertGreaterThan(amp.writes.count, writesBefore) // the values were requested again
+    }
+
+    func testAFreshLinkThatNeverAnswersIsReopened() {
+        // The amplifier has just been switched on and its Bluetooth is up, but it does not answer yet
+        let amp = FakeLink()
+        let transport = FakeTransport(amp: amp)
+        transport.reportsCancelledLinks = true
+        transport.knownLinks[amp.id] = amp
+        saveDevice(id: amp.id)
+        let controller = makeController(transport, timing: probing)
+        transport.powerOn()
+        wait("connected") { controller.connected }
+        wait("the silent link is dropped and a new one is opened") { transport.connectCount >= 2 }
+        XCTAssertGreaterThanOrEqual(amp.writes.count, AmpBLE.initialFetch.count * 2) // asked again before giving up
     }
 
     func testNothingIsSentWhenNotConnected() {

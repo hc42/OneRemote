@@ -25,5 +25,6 @@ it and the old one is marked "Superseded by".
 | [0017](0017-versioning-and-releases.md) | Versioning, changelog and release steps | Accepted |
 | [0018](0018-testing-strategy.md) | Testing strategy | Accepted |
 | [0019](0019-demo-mode.md) | Demo mode with a simulated amplifier | Accepted |
+| [0020](0020-verify-the-link-instead-of-trusting-it.md) | Verify the link instead of trusting its state | Accepted |
 
 New record: copy the newest file, increase the number, add it to this table.

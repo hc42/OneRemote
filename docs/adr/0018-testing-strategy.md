@@ -19,7 +19,7 @@ Tests are added in layers, cheapest first:
    that every user-facing text has a German translation, that no key is stale and that the
    placeholders match.
 3. `AmpController` tests with a simulated amplifier (`FakeAmplifier.swift`): connecting,
-   reconnecting by name, connection loss, retry, rate limits, AV Direct lock.
+   reconnecting by name, connection loss, dead links, retry, rate limits, AV Direct lock.
 4. **UI tests (XCUITest)** start the app with the launch argument `-simulated-amplifier YES`
    (debug builds only; the demo mode of ADR 0019 is the same simulator in every build). `SimulatedAmplifier` then replaces Bluetooth and answers the same frames
    as the amplifier, so the tests cover search, connecting, muting and swiping end to end.

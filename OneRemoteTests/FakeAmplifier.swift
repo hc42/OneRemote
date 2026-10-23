@@ -47,6 +47,8 @@ final class FakeTransport: BLETransport {
     private(set) var scanCount = 0
     private(set) var connectCount = 0
     private(set) var cancelCount = 0
+    /// Like CoreBluetooth: cancelling an open link ends it and reports the disconnect afterwards
+    var reportsCancelledLinks = false
     private var scanning = false
     private var pending: FakeLink?
     private var connected: FakeLink?
@@ -85,6 +87,12 @@ final class FakeTransport: BLETransport {
     func cancelConnection(_ link: BLEPeripheralLink) {
         cancelCount += 1
         if pending === link { pending = nil }
+        if reportsCancelledLinks, connected === link {
+            connected = nil
+            DispatchQueue.main.async { [weak self] in
+                self?.delegate?.bleDidDisconnect(link, error: nil)
+            }
+        }
     }
 
     // MARK: Test control

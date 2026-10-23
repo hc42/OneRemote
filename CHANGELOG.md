@@ -18,7 +18,8 @@ First release will be 0.1.0.
   shortcuts and the mouse wheel (Mac).
 - Blinking LED for the newly selected input.
 - Automatic reconnect after the amplifier was switched off and on, also when its Bluetooth
-  identifier changes.
+  identifier changes. When the app comes back after a long time in the background, it checks that
+  the connection still works and reconnects by itself if the amplifier does not answer.
 - Settings: device selection, balance, display brightness, volume limit, sensitivity, AV Direct
   with a two-step confirmation, device info.
 - English and German user interface; VoiceOver support.

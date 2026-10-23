@@ -7,6 +7,11 @@ struct AmpTiming {
     var connectTimeout = 15.0
     /// Pause before the automatic retry after a failed attempt
     var retryDelay = 4.0
+    /// An open link counts as dead when the amplifier does not answer a request within this time
+    /// (checked a few times, so a slow answer is not mistaken for a dead link)
+    var probeTimeout = 3.0
+    /// Pause between dropping a dead link and connecting again
+    var restartDelay = 0.5
 
     static let standard = AmpTiming()
 }
@@ -96,6 +101,8 @@ final class AmpController: NSObject, ObservableObject {
     private var target: SavedDevice? { candidate ?? savedDevice }
     /// Automatic retry after a failed connection attempt
     private var retryWork: DispatchWorkItem?
+    /// Waits for any answer from the amplifier after (re)opening a link, see `armProbe`
+    private var probeWork: DispatchWorkItem?
     private var attempt = 0
 
     init(transport: BLETransport = CoreBluetoothTransport(),
@@ -240,7 +247,7 @@ final class AmpController: NSObject, ObservableObject {
 
     /// Retry in a few seconds after a failure, as long as a saved device exists
     /// and the user is not in the device search
-    private func scheduleRetry() {
+    private func scheduleRetry(after delay: TimeInterval? = nil) {
         retryWork?.cancel()
         guard savedDevice != nil, candidate == nil, !showScan else { return }
         let work = DispatchWorkItem { [weak self] in
@@ -248,11 +255,73 @@ final class AmpController: NSObject, ObservableObject {
             self.connectToTarget()
         }
         retryWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + timing.retryDelay, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (delay ?? timing.retryDelay), execute: work)
+    }
+
+    // MARK: Is the link still alive?
+
+    /// The app came to the front. After hours in the background the system may have dropped the link without
+    /// the app noticing (it was suspended), or a connection attempt may be stale, because no timer ran in the
+    /// meantime. So the state is checked instead of trusted.
+    func appBecameActive() {
+        guard !showScan else { return }
+        if connected {
+            // Ask for the values; if nothing comes back, the link is dead
+            refresh()
+            armProbe(retries: 1)
+        } else if connecting {
+            // An attempt that is open longer than its time limit is stale
+            if Date().timeIntervalSince(connectStarted) > timing.connectTimeout {
+                appendLog("Restarting a stale connection attempt")
+                connectToTarget()
+            }
+        } else {
+            connectToTarget()
+        }
+    }
+
+    /// Any answer from the amplifier proves that the link works. If none arrives, ask again `retries` times,
+    /// then drop the link and connect from scratch. Otherwise the app could sit on a "connected" state that
+    /// no longer exists, with empty controls.
+    private func armProbe(retries: Int) {
+        probeWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self, self.connected else { return }
+            if retries > 0 {
+                self.refresh()
+                self.armProbe(retries: retries - 1)
+            } else {
+                self.linkIsDead()
+            }
+        }
+        probeWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + timing.probeTimeout, execute: work)
+    }
+
+    private func cancelProbe() {
+        probeWork?.cancel()
+        probeWork = nil
+    }
+
+    private func linkIsDead() {
+        appendLog("No answer from the amplifier: the link is considered dead")
+        cancelProbe()
+        let old = peripheral
+        connected = false
+        connecting = false
+        dataReady = false
+        avDirectKnown = false
+        writeQueue.removeAll()
+        peripheral = nil
+        if let old = old { transport.cancelConnection(old) }
+        status = String(localized: "Connection lost. Waiting for \(deviceName) …")
+        // Give the system a moment to close the old link, then start over
+        scheduleRetry(after: timing.restartDelay)
     }
 
     /// Bluetooth unusable: reset the state
     private func markOffline() {
+        cancelProbe()
         connecting = false
         connected = false
         avDirectKnown = false
@@ -279,6 +348,7 @@ final class AmpController: NSObject, ObservableObject {
 
     /// Ends timer, scan and (half-)open connection
     private func abortConnect() {
+        cancelProbe()
         connectTimeout?.cancel()
         connectTimeout = nil
         autoTarget = nil
@@ -558,6 +628,12 @@ extension AmpController: BLETransportDelegate {
 
     func bleDidDisconnect(_ link: BLEPeripheralLink, error: Error?) {
         let wasConnected = connected
+        // The report of a request we cancelled ourselves, arriving after a new attempt has started: ignore
+        if !wasConnected && connecting {
+            appendLog("Ignoring the disconnect report of an abandoned request")
+            return
+        }
+        cancelProbe()
         connected = false
         connecting = false
         connectTimeout?.cancel()
@@ -608,9 +684,11 @@ extension AmpController: BLETransportDelegate {
             save(SavedDevice(id: link.id, name: saved.name))
         }
         refresh()
+        armProbe(retries: 2)
     }
 
     func bleDidReceive(_ data: Data, from link: BLEPeripheralLink) {
+        cancelProbe()
         handle([UInt8](data))
     }
 

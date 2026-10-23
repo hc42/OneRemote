@@ -80,7 +80,7 @@ offered from firmware 2.0.
 | "Could not connect" or the connection screen stays up | Is the amplifier on and in range? Close other apps or devices connected to it. Tap "Try again". |
 | Bluetooth is turned off / access denied | Switch Bluetooth on, or allow it for the app in the system settings (Privacy & Security, Bluetooth). |
 | The amplifier is not in the list | Switch it off and on, move closer, and open the search again ("Search for devices"). |
-| The app does not reconnect after switching the amplifier off and on | Wait a few seconds, it retries by itself; bring the app to the front to trigger a retry. If it still fails, use "Search for another device" once. |
+| The app does not reconnect after switching the amplifier off and on | Wait a few seconds, it retries by itself; bring the app to the front to trigger a retry. After a long time in the background the app checks the connection when it comes to the front and reconnects if the amplifier does not answer. If it still fails, use "Search for another device" once. |
 | Values look outdated | They refresh when the app comes to the front. Settings has "Refresh values". |
 | The volume knob does nothing | The volume is locked (AV Direct on the AV input), or the volume limit is reached. |
 | Balance is greyed out | Headphones are connected to the amplifier. |
