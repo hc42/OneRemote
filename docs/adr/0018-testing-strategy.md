@@ -1,6 +1,6 @@
 # 0018. Testing strategy
 
-Date: 2026-10-18 · Status: Accepted
+Date: 2026-10-18 · Status: Accepted (continuous integration: see 0022)
 
 ## Context
 The behavior that is easiest to get wrong is pure logic: the LED scale with its hysteresis,

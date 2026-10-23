@@ -2,7 +2,7 @@
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
 # The app has no third-party dependencies (docs/adr/0016-privacy-by-design.md). The only thing to keep
-# current is the GitHub Actions used by workflows in .github/workflows/ (currently codeql.yml).
+# current is the GitHub Actions used by workflows in .github/workflows/ (currently codeql.yml and tests.yml).
 #
 # If Swift packages are ever added, they are declared in project.yml, which Dependabot does not read.
 # Then add a Package.swift/Package.resolved based setup and an entry with `package-ecosystem: "swift"`.

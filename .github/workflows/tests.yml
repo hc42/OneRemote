@@ -1,0 +1,66 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push to the same branch or pull request makes the running tests obsolete
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# The runner has no signing team (Config/Local.xcconfig is not tracked): sign ad-hoc for the Mac.
+# Simulator builds need no signing. See docs/TESTING.md and docs/adr/0018-testing-strategy.md.
+env:
+  XCODEBUILD_ARGS: CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
+
+jobs:
+  unit:
+    name: Unit tests (macOS)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Run unit tests
+        run: scripts/test.sh mac
+
+      - name: Upload results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: build/test-results/
+          retention-days: 7
+
+  ui:
+    name: UI tests (iPhone simulator)
+    # UI tests drive the app in demo mode with the simulated amplifier, no Bluetooth needed
+    needs: unit
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Run UI tests
+        run: scripts/test.sh ui
+
+      - name: Upload results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: build/test-results/
+          retention-days: 7

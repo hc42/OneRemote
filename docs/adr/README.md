@@ -27,5 +27,6 @@ it and the old one is marked "Superseded by".
 | [0019](0019-demo-mode.md) | Demo mode with a simulated amplifier | Accepted |
 | [0020](0020-verify-the-link-instead-of-trusting-it.md) | Verify the link instead of trusting its state | Accepted |
 | [0021](0021-single-window-on-the-mac.md) | Single window on the Mac, quit when it closes | Accepted |
+| [0022](0022-continuous-integration.md) | Continuous integration with GitHub Actions | Accepted |
 
 New record: copy the newest file, increase the number, add it to this table.

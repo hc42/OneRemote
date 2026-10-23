@@ -11,6 +11,8 @@
 #   SIMULATOR="iPhone 16"      simulator to use (default: the first available iPhone)
 #   UNIT_ON_IPHONE=1           also run the unit tests in the iPhone simulator
 #   UI_ON_MAC=1                with "all" or "ui": also run the UI tests on the Mac
+#   XCODEBUILD_ARGS="..."      extra build settings for every run, e.g. ad-hoc signing in CI:
+#                              XCODEBUILD_ARGS="CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="
 #
 # The suites are defined by the test plans in TestPlans/ (Unit, UI, All); the same plans can be
 # chosen in Xcode (scheme > Test) or run directly: xcodebuild test -scheme OneRemote -testPlan All ...
@@ -25,6 +27,7 @@ SCHEME="OneRemote"
 PROJECT="OneRemote.xcodeproj"
 RESULTS="build/test-results"
 FAILED=()
+read -r -a EXTRA_ARGS <<< "${XCODEBUILD_ARGS:-}"
 
 case "$MODE" in all|unit|ui|mac|macui) ;; *) echo "Usage: $0 [all|unit|ui|mac|macui]" >&2; exit 2 ;; esac
 
@@ -59,10 +62,10 @@ run() {
     local log="$RESULTS/${title// /-}.log"
     if command -v xcpretty >/dev/null; then
         xcodebuild test -project "$PROJECT" -scheme "$SCHEME" -destination "$destination" \
-            -resultBundlePath "$bundle" "$@" 2>&1 | tee "$log" | xcpretty
+            -resultBundlePath "$bundle" "$@" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} 2>&1 | tee "$log" | xcpretty
     else
         xcodebuild test -project "$PROJECT" -scheme "$SCHEME" -destination "$destination" \
-            -resultBundlePath "$bundle" "$@" > "$log" 2>&1
+            -resultBundlePath "$bundle" "$@" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} > "$log" 2>&1
         summarize < "$log"
     fi
     # the pipes hide xcodebuild's exit status: look at the result bundle instead

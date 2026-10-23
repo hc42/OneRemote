@@ -4,7 +4,9 @@ Run the automated tests first. They are grouped in test plans (`TestPlans/`): **
 Cmd+U; LED scale, protocol, parser, translations and the connection handling against a simulated
 amplifier), **UI** (starts the app against the same kind of simulation; on the Mac only the start test runs, clicking is checked by hand) and **All**. Choose the plan
 in the scheme's test action, or run `scripts/test.sh` from the command line (`unit`, `ui` or `mac`
-for a subset, see the script header). This list covers what they cannot:
+for a subset, see the script header). GitHub Actions runs the unit tests (macOS) and the UI tests (iPhone simulator) on every push and pull
+request to `main` (`.github/workflows/tests.yml`, ADR 0022); failed runs keep the result bundles as an artifact.
+This list covers what they cannot:
 the real amplifier, the gestures and the look. Run it before a release and after changes to `AmpController`, `ControlView`, `RotaryKnob` or the localization. Test on at least
 one iPhone and the Mac; use an iPad if layout code changed.
 
