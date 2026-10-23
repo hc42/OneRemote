@@ -43,6 +43,7 @@ OneRemote/
 ├── .github/                     Dependabot configuration, CodeQL workflow
 ├── Config/                      Info.plist, signing settings (Local.xcconfig is not tracked)
 ├── CHANGELOG.md                 Notable changes per release
+├── AGENTS.md, CLAUDE.md         Notes for AI agents (CLAUDE.md just includes AGENTS.md)
 ├── SECURITY.md                  How to report a vulnerability
 ├── scripts/                     test.sh (all tests), screenshots.sh (App Store screenshots)
 ├── TestPlans/                   Xcode test plans: Unit, UI, All, Screenshots
